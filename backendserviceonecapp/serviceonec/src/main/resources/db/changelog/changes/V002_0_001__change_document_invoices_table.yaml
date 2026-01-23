@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: V002_0_001__change_document_invoices_table
+      author: adilhan
+      changes:
+        - addColumn:
+            tableName: invoices
+            columns:
+              - column:
+                  name: operation_type
+                  type: VARCHAR(100)
+                  defaultValue: '--'
+                  constraints:
+                    nullable: false

@@ -7,7 +7,7 @@ spring:
       - "optional:file:./config/application-secrets.yml"
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/serviceonec_db
+    url: jdbc:postgresql://localhost:5433/serviceonec_db
     username: serviceonec_user
     password: serviceonec_password
     driverClassName: org.postgresql.Driver
@@ -28,7 +28,7 @@ spring:
           batch_size: 20
         order_inserts: true
         order_updates: true
-    show-sql: true
+    show-sql: false
 
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
@@ -36,6 +36,7 @@ spring:
 
   # Настройки логирования
   logging:
+#    config: "classpath:log4j2.xml"
     level:
       com.example.demo: DEBUG                    # Уровень логирования нашего приложения
       org.springframework.web: INFO
