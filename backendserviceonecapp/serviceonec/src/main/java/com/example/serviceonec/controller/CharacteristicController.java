@@ -1,7 +1,6 @@
 package com.example.serviceonec.controller;
 
 import com.example.serviceonec.model.entity.CharacteristicEntity;
-import com.example.serviceonec.model.entity.InvoiceEntity;
 import com.example.serviceonec.service.CharacteristicService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +21,7 @@ public class CharacteristicController {
 
     private final CharacteristicService characteristicService;
 
-    @GetMapping("/get-all-characteristic")
+    @GetMapping("/save-all-characteristic")
     public ResponseEntity<List<CharacteristicEntity>> getAllInvoice() {
 
         List<CharacteristicEntity> characteristicEntities = characteristicService.getAllCharacteristic();

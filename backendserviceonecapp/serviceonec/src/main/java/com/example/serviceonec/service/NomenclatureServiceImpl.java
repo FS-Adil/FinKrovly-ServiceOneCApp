@@ -1,8 +1,6 @@
 package com.example.serviceonec.service;
 
 import com.example.serviceonec.config.RestClientConfig;
-import com.example.serviceonec.model.dto.response.InvoiceResponseDto;
-import com.example.serviceonec.model.dto.response.InvoiceValueResponseDto;
 import com.example.serviceonec.model.dto.response.NomenclatureItemResponseDto;
 import com.example.serviceonec.model.dto.response.NomenclatureResponseDto;
 import com.example.serviceonec.model.entity.NomenclatureEntity;
@@ -25,6 +23,8 @@ public class NomenclatureServiceImpl implements NomenclatureService {
 
     @Override
     public List<NomenclatureEntity> getAllNomenclature() {
+
+        nomenclatureRepository.deleteAll();
 
         NomenclatureResponseDto nomenclatureResponseDto = getNomenclature();
 

@@ -1,9 +1,7 @@
-package com.example.serviceonec.model.mapper;
+package com.example.serviceonec.model.mapper.incoice;
 
-import com.example.serviceonec.model.dto.response.InvoiceStocksItemResponseDto;
-import com.example.serviceonec.model.dto.response.InvoiceValueResponseDto;
-import com.example.serviceonec.model.entity.InvoiceEntity;
-import com.example.serviceonec.model.entity.InvoiceStocksEntity;
+import com.example.serviceonec.model.dto.response.invoice.InvoiceStocksItemResponseDto;
+import com.example.serviceonec.model.entity.invoice.InvoiceStocksEntity;
 import org.mapstruct.*;
 
 import java.time.LocalDateTime;

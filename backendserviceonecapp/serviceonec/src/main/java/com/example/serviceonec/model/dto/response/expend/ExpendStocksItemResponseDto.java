@@ -1,4 +1,4 @@
-package com.example.serviceonec.model.dto.response;
+package com.example.serviceonec.model.dto.response.expend;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -6,7 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class InvoiceStocksItemResponseDto {
+public class ExpendStocksItemResponseDto {
 
     @JsonProperty("Ref_Key")
     private String refKey;
@@ -28,4 +28,5 @@ public class InvoiceStocksItemResponseDto {
 
     @JsonProperty("Цена")
     private BigDecimal price;
+
 }

@@ -1,6 +1,5 @@
 package com.example.serviceonec.controller;
 
-import com.example.serviceonec.model.entity.InvoiceEntity;
 import com.example.serviceonec.model.entity.NomenclatureEntity;
 import com.example.serviceonec.service.NomenclatureService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,7 @@ public class NomenclatureController {
 
     private final NomenclatureService nomenclatureService;
 
-    @GetMapping("/get-all-nomenclature")
+    @GetMapping("/save-all-nomenclature")
     public ResponseEntity<List<NomenclatureEntity>> getAllNomenclature() {
 
         List<NomenclatureEntity> nomenclatureEntities = nomenclatureService.getAllNomenclature();

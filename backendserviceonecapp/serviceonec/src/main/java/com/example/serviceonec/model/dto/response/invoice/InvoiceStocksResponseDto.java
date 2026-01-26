@@ -1,4 +1,4 @@
-package com.example.serviceonec.model.dto.response;
+package com.example.serviceonec.model.dto.response.invoice;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

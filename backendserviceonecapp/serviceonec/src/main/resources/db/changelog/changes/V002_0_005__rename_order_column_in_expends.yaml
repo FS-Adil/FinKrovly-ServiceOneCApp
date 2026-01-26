@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: V002_0_005__rename_order_column_in_expends
+      author: adilhan
+      changes:
+        - renameColumn:
+            tableName: expends
+            oldColumnName: order
+            newColumnName: doc_order
+            columnDataType: UUID

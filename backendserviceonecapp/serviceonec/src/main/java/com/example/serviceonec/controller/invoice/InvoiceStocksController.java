@@ -1,8 +1,7 @@
-package com.example.serviceonec.controller;
+package com.example.serviceonec.controller.invoice;
 
-import com.example.serviceonec.model.entity.InvoiceEntity;
-import com.example.serviceonec.model.entity.InvoiceStocksEntity;
-import com.example.serviceonec.service.InvoiceStocksService;
+import com.example.serviceonec.model.entity.invoice.InvoiceStocksEntity;
+import com.example.serviceonec.service.invoice.InvoiceStocksService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,7 +21,7 @@ public class InvoiceStocksController {
 
     private final InvoiceStocksService invoiceStocksService;
 
-    @GetMapping("/get-all-invoice-stocks")
+    @GetMapping("/save-all-invoice-stocks")
     public ResponseEntity<List<InvoiceStocksEntity>> getAllInvoiceStocks() {
 //        LocalDateTime startDate = LocalDateTime.of(2025, 1, 1, 0, 0, 0);
 //        LocalDateTime endDate = LocalDateTime.of(2025, 12, 31, 23, 59, 59);

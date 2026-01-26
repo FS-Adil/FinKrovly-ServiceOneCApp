@@ -1,6 +1,6 @@
-package com.example.serviceonec.service;
+package com.example.serviceonec.service.invoice;
 
-import com.example.serviceonec.model.entity.InvoiceEntity;
+import com.example.serviceonec.model.entity.invoice.InvoiceEntity;
 
 import java.util.List;
 

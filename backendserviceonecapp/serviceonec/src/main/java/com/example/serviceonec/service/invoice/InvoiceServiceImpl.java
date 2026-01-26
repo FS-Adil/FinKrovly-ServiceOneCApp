@@ -1,24 +1,22 @@
-package com.example.serviceonec.service;
+package com.example.serviceonec.service.invoice;
 
 import com.example.serviceonec.config.RestClientConfig;
-import com.example.serviceonec.model.dto.response.InvoiceResponseDto;
-import com.example.serviceonec.model.dto.response.InvoiceValueResponseDto;
-import com.example.serviceonec.model.entity.InvoiceEntity;
-import com.example.serviceonec.model.mapper.InvoiceMapper;
-import com.example.serviceonec.repository.InvoiceRepository;
+import com.example.serviceonec.model.dto.response.invoice.InvoiceResponseDto;
+import com.example.serviceonec.model.dto.response.invoice.InvoiceItemResponseDto;
+import com.example.serviceonec.model.entity.invoice.InvoiceEntity;
+import com.example.serviceonec.model.mapper.incoice.InvoiceMapper;
+import com.example.serviceonec.repository.invoice.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class InvoiceServiceImpl implements InvoiceService{
+public class InvoiceServiceImpl implements InvoiceService {
 
     private final RestClientConfig restClientConfig;
     private final InvoiceMapper invoiceMapper;
@@ -49,7 +47,7 @@ public class InvoiceServiceImpl implements InvoiceService{
                 isStop = false;
             }
 
-            for (InvoiceValueResponseDto value : invoiceResponseDto.getValue()) {
+            for (InvoiceItemResponseDto value : invoiceResponseDto.getValue()) {
                 invoiceRepository.save(invoiceMapper.toEntity(value));
             }
 
