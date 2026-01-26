@@ -1,5 +1,6 @@
-package com.example.serviceonec.model.entity;
+package com.example.serviceonec.model.entity.expend;
 
+import com.example.serviceonec.model.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -12,8 +13,8 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table(name = "invoices")
-public class InvoiceEntity extends BaseEntity {
+@Table(name = "expends")
+public class ExpendEntity extends BaseEntity {
 
     @Column(name = "date", nullable = false)
     private LocalDateTime date;
@@ -27,9 +28,13 @@ public class InvoiceEntity extends BaseEntity {
     @Column(name = "organizationKey", nullable = false)
     private UUID organizationKey;
 
+    @Column(name = "doc_order")
+    private UUID docOrder;
+
+    @Column(name = "structural_unit_key", nullable = false)
+    private UUID structuralUnitKey;
+
     @Column(name = "operationType", nullable = false)
     private String operationType;
 
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private Set<Post> posts = new HashSet<>();
 }

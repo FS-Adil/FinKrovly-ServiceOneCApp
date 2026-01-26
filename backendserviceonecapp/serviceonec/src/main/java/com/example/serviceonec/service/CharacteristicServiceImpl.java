@@ -26,6 +26,8 @@ public class CharacteristicServiceImpl implements CharacteristicService{
     @Override
     public List<CharacteristicEntity> getAllCharacteristic() {
 
+        characteristicRepository.deleteAll();
+
         CharacteristicResponseDto characteristicResponseDto = getCharacteristic();
 
         for (CharacteristicItemResponseDto value : characteristicResponseDto.getValue()) {

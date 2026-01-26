@@ -1,13 +1,11 @@
-package com.example.serviceonec.service;
+package com.example.serviceonec.service.invoice;
 
 import com.example.serviceonec.config.RestClientConfig;
-import com.example.serviceonec.model.dto.response.InvoiceResponseDto;
-import com.example.serviceonec.model.dto.response.InvoiceStocksItemResponseDto;
-import com.example.serviceonec.model.dto.response.InvoiceStocksResponseDto;
-import com.example.serviceonec.model.dto.response.InvoiceValueResponseDto;
-import com.example.serviceonec.model.entity.InvoiceStocksEntity;
-import com.example.serviceonec.model.mapper.InvoiceStocksMapper;
-import com.example.serviceonec.repository.InvoiceStocksRepository;
+import com.example.serviceonec.model.dto.response.invoice.InvoiceStocksItemResponseDto;
+import com.example.serviceonec.model.dto.response.invoice.InvoiceStocksResponseDto;
+import com.example.serviceonec.model.entity.invoice.InvoiceStocksEntity;
+import com.example.serviceonec.model.mapper.incoice.InvoiceStocksMapper;
+import com.example.serviceonec.repository.invoice.InvoiceStocksRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

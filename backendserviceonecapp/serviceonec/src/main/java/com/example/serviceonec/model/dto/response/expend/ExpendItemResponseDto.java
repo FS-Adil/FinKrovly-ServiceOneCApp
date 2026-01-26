@@ -1,4 +1,4 @@
-package com.example.serviceonec.model.dto.response;
+package com.example.serviceonec.model.dto.response.expend;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
-public class InvoiceValueResponseDto {
+public class ExpendItemResponseDto {
 
     @JsonProperty("Ref_Key")
     private UUID refKey;
@@ -18,7 +18,13 @@ public class InvoiceValueResponseDto {
     @JsonProperty("Организация_Key")
     private UUID organizationKey;
 
-//    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonProperty("Заказ")
+    private UUID docOrder;
+
+    @JsonProperty("СтруктурнаяЕдиница_Key")
+    private UUID structuralUnitKey;
+
+    //    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonProperty("Date")
     private LocalDateTime date;
 

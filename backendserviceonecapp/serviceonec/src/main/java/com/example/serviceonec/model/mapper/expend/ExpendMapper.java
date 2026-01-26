@@ -1,16 +1,19 @@
-package com.example.serviceonec.model.mapper;
+package com.example.serviceonec.model.mapper.expend;
 
-import com.example.serviceonec.model.dto.response.InvoiceValueResponseDto;
-import com.example.serviceonec.model.entity.InvoiceEntity;
-import org.mapstruct.*;
+import com.example.serviceonec.model.dto.response.expend.ExpendItemResponseDto;
+import com.example.serviceonec.model.dto.response.invoice.InvoiceItemResponseDto;
+import com.example.serviceonec.model.entity.expend.ExpendEntity;
+import com.example.serviceonec.model.entity.invoice.InvoiceEntity;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.UUID;
 
 @Mapper(componentModel = "spring")
-public interface InvoiceMapper {
+public interface ExpendMapper {
 
     // Форматтер для даты
     DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
@@ -22,27 +25,12 @@ public interface InvoiceMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
-    InvoiceEntity toEntity(InvoiceValueResponseDto dto);
+    ExpendEntity toEntity(ExpendItemResponseDto dto);
 
     /**
      * Маппинг из Entity в DTO
      */
-    InvoiceValueResponseDto toDto(InvoiceEntity entity);
-
-    /**
-     * Маппинг списка Entity в список DTO
-     */
-    List<InvoiceValueResponseDto> toDtoList(List<InvoiceEntity> entities);
-
-    /**
-     * Обновление Entity из DTO
-     */
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "version", ignore = true)
-    void updateEntityFromDto(InvoiceValueResponseDto dto, @MappingTarget InvoiceEntity entity);
+    ExpendItemResponseDto toDto(ExpendEntity entity);
 
     /**
      * Кастомный маппинг для строки даты (если приходит как String)
@@ -70,4 +58,5 @@ public interface InvoiceMapper {
         }
         return UUID.fromString(uuidString);
     }
+
 }

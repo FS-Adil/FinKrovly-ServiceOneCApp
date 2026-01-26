@@ -24,7 +24,7 @@ Configuration:
   Loggers:
     # Логгер для конкретного пакета
     Logger:
-      name: com.example.mypackage
+      name: com.example.serviceonec
       level: DEBUG
       additivity: false  # не наследовать аппендеры от Root
       AppenderRef:
