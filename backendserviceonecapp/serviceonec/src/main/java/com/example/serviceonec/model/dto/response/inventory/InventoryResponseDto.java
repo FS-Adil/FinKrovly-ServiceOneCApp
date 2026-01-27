@@ -10,7 +10,7 @@ import java.util.List;
 public class InventoryResponseDto {
 
     @JsonProperty("value")
-    private List<ExpendItemResponseDto> value;
+    private List<InventoryItemResponseDto> value;
 
     @JsonProperty("odata.metadata")
     private String metadata;
