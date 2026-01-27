@@ -4,7 +4,7 @@ import com.example.serviceonec.config.RestClientConfig;
 import com.example.serviceonec.model.dto.response.invoice.InvoiceResponseDto;
 import com.example.serviceonec.model.dto.response.invoice.InvoiceItemResponseDto;
 import com.example.serviceonec.model.entity.invoice.InvoiceEntity;
-import com.example.serviceonec.model.mapper.incoice.InvoiceMapper;
+import com.example.serviceonec.model.mapper.invoice.InvoiceMapper;
 import com.example.serviceonec.repository.invoice.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

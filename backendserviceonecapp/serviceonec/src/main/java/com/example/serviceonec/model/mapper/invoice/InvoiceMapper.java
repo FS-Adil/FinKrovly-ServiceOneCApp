@@ -1,4 +1,4 @@
-package com.example.serviceonec.model.mapper.incoice;
+package com.example.serviceonec.model.mapper.invoice;
 
 import com.example.serviceonec.model.dto.response.invoice.InvoiceItemResponseDto;
 import com.example.serviceonec.model.entity.invoice.InvoiceEntity;
