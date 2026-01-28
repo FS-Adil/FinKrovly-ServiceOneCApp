@@ -8,6 +8,7 @@ import com.example.serviceonec.model.mapper.expend.ExpendMapper;
 import com.example.serviceonec.repository.expend.ExpendRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -47,8 +48,12 @@ public class ExpendServiceImpl implements ExpendService {
                 isStop = false;
             }
 
-            for (ExpendItemResponseDto value : expendResponseDto.getValue()) {
-                expendRepository.save(expendMapper.toEntity(value));
+            try {
+                for (ExpendItemResponseDto value : expendResponseDto.getValue()) {
+                    expendRepository.save(expendMapper.toEntity(value));
+                }
+            } catch (DataIntegrityViolationException e) {
+                log.error("Ошибка целостности данных: {}", e.getMessage());
             }
 
             skip+=top;

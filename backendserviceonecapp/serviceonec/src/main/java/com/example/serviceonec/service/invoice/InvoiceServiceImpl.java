@@ -8,6 +8,7 @@ import com.example.serviceonec.model.mapper.invoice.InvoiceMapper;
 import com.example.serviceonec.repository.invoice.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -47,8 +48,12 @@ public class InvoiceServiceImpl implements InvoiceService {
                 isStop = false;
             }
 
-            for (InvoiceItemResponseDto value : invoiceResponseDto.getValue()) {
-                invoiceRepository.save(invoiceMapper.toEntity(value));
+            try {
+                for (InvoiceItemResponseDto value : invoiceResponseDto.getValue()) {
+                    invoiceRepository.save(invoiceMapper.toEntity(value));
+                }
+            } catch (DataIntegrityViolationException e) {
+                log.error("Ошибка целостности данных: {}", e.getMessage());
             }
 
             skip+=top;
