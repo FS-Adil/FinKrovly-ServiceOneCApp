@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: V001_0_010__create_document_production_table
+      author: adilhan
+      changes:
+        - createTable:
+            tableName: productions
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: ref_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: document_number
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: document_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_order_key
+                  type: UUID
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0

@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: V001_0_012__create_document_production_stocks_table
+      author: adilhan
+      changes:
+        - createTable:
+            tableName: production_stocks
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: ref_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: line_number
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: nomenclature_key
+                  type: UUID
+              - column:
+                  name: characteristic_key
+                  type: UUID
+              - column:
+                  name: batch_key
+                  type: UUID
+              - column:
+                  name: quantity
+                  type: DECIMAL(19, 4)
+                  defaultValue: 0.0000
+              - column:
+                  name: specification_key
+                  type: UUID
+              - column:
+                  name: structural_unit_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0

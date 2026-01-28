@@ -1,8 +1,8 @@
-package com.example.serviceonec.controller.inventory;
+package com.example.serviceonec.controller.production;
 
 import com.example.serviceonec.model.entity.expend.ExpendEntity;
-import com.example.serviceonec.model.entity.inventory.InventoryEntity;
-import com.example.serviceonec.service.inventory.InventoryService;
+import com.example.serviceonec.model.entity.production.ProductionEntity;
+import com.example.serviceonec.service.production.ProductionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,23 +19,23 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/inventory")
-public class InventoryController {
+@RequestMapping("/api/v1/production")
+public class ProductionController {
 
-    private final InventoryService inventoryService;
+    private final ProductionService productionService;
 
-    @GetMapping("/save-all-inventory")
-    public ResponseEntity<Page<InventoryEntity>> getAllInventory() {
+    @GetMapping("/save-all-production")
+    public ResponseEntity<Page<ProductionEntity>> getAllProduction() {
         LocalDateTime startDate = LocalDateTime.of(2025, 12, 1, 0, 0, 0);
         LocalDateTime endDate = LocalDateTime.of(2025, 12, 31, 23, 59, 59);
 
 //        Optional<InvoiceResponseDto> invoiceResponseDtoOptional = Optional.ofNullable(invoiceService.getAllInvoice(startDate, endDate));
-        Page<InventoryEntity> inventoryEntities = inventoryService.getAllInventory();
+        Page<ProductionEntity> productionEntities = productionService.getAllProduction(startDate, endDate);
 
-        if (inventoryEntities.isEmpty()) {
+        if (productionEntities.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "not found");
         }
-        return ResponseEntity.ok(inventoryEntities);
+        return ResponseEntity.ok(productionEntities);
     }
 
 }
