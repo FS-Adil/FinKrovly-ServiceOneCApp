@@ -1,0 +1,25 @@
+package com.example.serviceonec.model.entity.rolllist;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.UUID;
+
+@Getter
+@Setter
+@Builder
+public class RollListEntity {
+
+    private String nomenclatureName;
+
+    private String characteristicName;
+
+    private String batchName;
+
+    private Double quantityBalance;
+
+    private Double amountBalance;
+
+}
