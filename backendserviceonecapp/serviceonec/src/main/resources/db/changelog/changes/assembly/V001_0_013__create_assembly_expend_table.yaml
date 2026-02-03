@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: V001_0_013__create_assembly_expend_table
+      author: adilhan
+      changes:
+        - createTable:
+            tableName: assembly_expend
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: nomenclature
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: nomenclature_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: characteristic_key
+                  type: UUID
+              - column:
+                  name: characteristic
+                  type: varchar(255)
+              - column:
+                  name: date
+                  type: timestamp
+              - column:
+                  name: quantity
+                  type: decimal(19,4)
+              - column:
+                  name: price
+                  type: decimal(19,4)
+              - column:
+                  name: cost_price
+                  type: decimal(19,4)
+              - column:
+                  name: expend_stocks_id
+                  type: bigint
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0
