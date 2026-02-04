@@ -24,7 +24,7 @@ public interface ProductionItemsMapper {
     /**
      * Маппинг из Entity в DTO
      */
-    ProductionItemResponseDto.ProductionItemsDto toDto(ProductionItemsEntity entity);
+//    ProductionItemResponseDto.ProductionItemsDto toDto(ProductionItemsEntity entity);
 
     /**
      * Кастомный маппинг для UUID (если приходит как String)

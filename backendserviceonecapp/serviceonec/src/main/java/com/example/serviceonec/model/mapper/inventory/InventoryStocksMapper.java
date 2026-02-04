@@ -23,7 +23,7 @@ public interface InventoryStocksMapper {
     /**
      * Маппинг из Entity в DTO
      */
-    InventoryItemResponseDto.InventoryStocksResponseDto toDto(InventoryStocksEntity entity);
+//    InventoryItemResponseDto.InventoryStocksResponseDto toDto(InventoryStocksEntity entity);
 
     /**
      * Кастомный маппинг для UUID (если приходит как String)

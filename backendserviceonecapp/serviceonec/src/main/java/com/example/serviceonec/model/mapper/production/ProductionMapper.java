@@ -30,7 +30,7 @@ public interface ProductionMapper {
     /**
      * Маппинг из Entity в DTO
      */
-    ProductionItemResponseDto toDto(ProductionEntity entity);
+//    ProductionItemResponseDto toDto(ProductionEntity entity);
 
     /**
      * Кастомный маппинг для UUID (если приходит как String)

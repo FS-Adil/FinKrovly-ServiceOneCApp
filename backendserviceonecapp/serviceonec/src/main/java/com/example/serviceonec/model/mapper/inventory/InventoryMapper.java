@@ -28,7 +28,7 @@ public interface InventoryMapper {
     /**
      * Маппинг из Entity в DTO
      */
-    InventoryItemResponseDto toDto(InventoryEntity entity);
+//    InventoryItemResponseDto toDto(InventoryEntity entity);
 
     /**
      * Кастомный маппинг для строки даты (если приходит как String)

@@ -33,6 +33,9 @@ public class BatchServiceImpl implements BatchService {
     public Page<BatchEntity> getAllBatch() {
         log.info("-->BatchServiceImpl-->getAllBatch--вызов метода");
 
+        batchRepository.deleteAll();
+        log.info("-->Чистим таблицу batches");
+
         boolean isStop = true;
         int top = 100;
         int skip = 0;

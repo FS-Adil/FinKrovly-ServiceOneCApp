@@ -6,11 +6,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "onec.odatafin")
+@ConfigurationProperties(prefix = "one-c.odata-fin")
 @Getter
 @Setter
 public class OneCProperties {
     private String baseUrl;
     private String username;
     private String password;
+    private String oneCGuid;
 }

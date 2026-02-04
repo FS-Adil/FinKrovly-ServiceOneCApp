@@ -1,18 +1,17 @@
 package com.example.serviceonec.service.rolllist;
 
+import com.example.serviceonec.config.OneCProperties;
 import com.example.serviceonec.config.RestClientConfig;
-import com.example.serviceonec.model.dto.response.production.ProductionResponseDto;
 import com.example.serviceonec.model.dto.response.rolllist.RollListItemResponseDto;
 import com.example.serviceonec.model.dto.response.rolllist.RollListResponseDto;
 import com.example.serviceonec.model.entity.rolllist.RollListEntity;
+import com.example.serviceonec.repository.BatchRepository;
 import com.example.serviceonec.repository.CharacteristicRepository;
 import com.example.serviceonec.repository.NomenclatureRepository;
-import com.example.serviceonec.util.OneCGuid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +24,9 @@ public class RollListServiceImpl implements RollListService {
     private final RestClientConfig restClientConfig;
     private final NomenclatureRepository nomenclatureRepository;
     private final CharacteristicRepository characteristicRepository;
+    private final BatchRepository batchRepository;
+
+    private final OneCProperties oneCProperties;
 
     @Override
     public List<RollListEntity> getAllClosedRoll() {
@@ -42,8 +44,8 @@ public class RollListServiceImpl implements RollListService {
                                         .getDescription())
                                 .characteristicName(characteristicRepository.findByRefKey(item.getCharacteristicKey())
                                         .getDescription())
-                                .batchName(UUID.randomUUID()
-                                        .toString())
+                                .batchName(batchRepository.findByRefKey(item.getBatchKey())
+                                        .getDescription())
                                 .quantityBalance(item.getQuantityBalance())
                                 .amountBalance(item.getAmountBalance())
                                 .build()
@@ -62,7 +64,9 @@ public class RollListServiceImpl implements RollListService {
                 "Condition='cast(СтруктурнаяЕдиница, 'Catalog_СтруктурныеЕдиницы') eq guid'%s'')" +
                 "?" +
                 "$select=Номенклатура_Key, Характеристика_Key, Партия_Key, КоличествоBalance, СуммаBalance&" +
-                "$format=json", OneCGuid.CLOSED_ROLL_GUID);
+                "$format=json", oneCProperties.getOneCGuid());
+
+        log.info("{}-{}", url, oneCProperties.getOneCGuid());
 
         RollListResponseDto response;
 
@@ -81,7 +85,7 @@ public class RollListServiceImpl implements RollListService {
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех Закрытых рулонов");
+        log.info("------> Конец метода по поиску в 1с всех Закрытых рулонов{}", response.getValue());
 
         return response;
     }
