@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: V001_0_009__create_document_inventory_stocks_table
+      author: adilhan
+      changes:
+        - createTable:
+            tableName: inventory_stocks
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: ref_key
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: line_number
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: nomenclature_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: batch_key
+                  type: UUID
+              - column:
+                  name: characteristic_key
+                  type: UUID
+              - column:
+                  name: quantity
+                  type: DECIMAL
+              - column:
+                  name: unit_key
+                  type: UUID
+              - column:
+                  name: price
+                  type: DECIMAL
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0

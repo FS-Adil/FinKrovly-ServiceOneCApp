@@ -7,7 +7,7 @@ spring:
       - "optional:file:./config/application-secrets.yml"
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/serviceonec_db
+    url: jdbc:postgresql://localhost:5433/serviceonec_db
     username: serviceonec_user
     password: serviceonec_password
     driverClassName: org.postgresql.Driver
@@ -28,7 +28,7 @@ spring:
           batch_size: 20
         order_inserts: true
         order_updates: true
-    show-sql: true
+    show-sql: false
 
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
@@ -37,7 +37,7 @@ spring:
   # Настройки логирования
   logging:
     level:
-      com.example.demo: DEBUG                    # Уровень логирования нашего приложения
+      com.example.serviceonec: DEBUG                    # Уровень логирования нашего приложения
       org.springframework.web: INFO
       org.hibernate: WARN                        # Hibernate логи только предупреждения и ошибки
       org.hibernate.SQL: DEBUG                   # SQL логи (только для отладки)
@@ -46,6 +46,6 @@ spring:
       console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"  # Формат логов
       file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     file:
-      name: logs/serviceonec-app.log                    # Файл логов
+      name: logs/service_one_c.log                    # Файл логов
       max-size: 10MB                             # Максимальный размер файла лога
       max-history: 30

@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: V001_0_006__create_document_expends_stocks_table
+      author: adilhan
+      changes:
+        - createTable:
+            tableName: expend_stocks
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: ref_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: line_number
+                  type: VARCHAR(50)
+              - column:
+                  name: nomenclature_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: characteristic_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: DECIMAL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: measurement_unit
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: DECIMAL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0
