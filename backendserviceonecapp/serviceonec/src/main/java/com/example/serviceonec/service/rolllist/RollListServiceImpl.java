@@ -108,6 +108,7 @@ public class RollListServiceImpl implements RollListService {
                                 .quantityBalance(item.getQuantityBalance())
                                 .weight(batchWeight)
                                 .length(batchLength)
+                                .location("Под краном")
                                 .build()
                 );
             }

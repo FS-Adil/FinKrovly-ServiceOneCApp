@@ -25,4 +25,6 @@ public class RollListEntity {
 
     private BigDecimal length;
 
+    private String location;
+
 }
