@@ -27,7 +27,7 @@ spring:
 
 logging:
   level:
-    com.example.demo: INFO
+    com.example.serviceonec: INFO
     root: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"  # Формат логов
