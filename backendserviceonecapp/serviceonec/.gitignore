@@ -7,6 +7,7 @@ target/
 ### my gitignore ####
 config/application-secrets.yml
 logs/
+.env
 
 ### STS ###
 .apt_generated
