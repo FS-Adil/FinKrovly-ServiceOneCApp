@@ -18,19 +18,19 @@ public class BatchItemResponseDto {
     @JsonProperty("Code")
     private String code;
 
-    @JsonProperty("_Цена")
+    @JsonProperty("Цена")
     private Double price;
 
-    @JsonProperty("_Вес")
+    @JsonProperty("Вес")
     private Double weight;
 
-    @JsonProperty("_Количество")
+    @JsonProperty("Количество")
     private Double quantity;
 
-    @JsonProperty("_Длина")
+    @JsonProperty("Длина")
     private Double length;
 
-    @JsonProperty("_ПартияДата")
+    @JsonProperty("ДатаПартии")
     private LocalDateTime batchDate;
 
 }

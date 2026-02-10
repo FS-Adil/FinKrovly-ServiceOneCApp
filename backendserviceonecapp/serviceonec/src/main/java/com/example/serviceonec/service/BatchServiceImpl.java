@@ -82,7 +82,7 @@ public class BatchServiceImpl implements BatchService {
     ) {
         log.info("------> Старт метода по поиску в 1с всех Партий");
         String url = String.format("/Catalog_ПартииНоменклатуры?" +
-                "$select=Ref_Key,Description,Code,_Цена,_Вес,_Количество,_Длина,_ПартияДата&" +
+                "$select=Ref_Key,Description,Code,Цена,Вес,Количество,Длина,ДатаПартии&" +
                 "$top=%s&$skip=%s&" +
                 "$format=json", top, skip);
 
