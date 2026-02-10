@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -40,29 +41,13 @@ public class RollListServiceImpl implements RollListService {
 
         RollListResponseDto rollListResponseDto = getResponse();
 
-//        for (RollListItemResponseDto item : rollListResponseDto.getValue()) {
-//
-//            if (item.getQuantityBalance().compareTo(0.0) > 0) {
-//                list.add(
-//                        RollListEntity.builder()
-//                                .nomenclatureName(nomenclatureRepository.findByRefKey(item.getNomenclatureKey())
-//                                        .getDescription())
-//                                .characteristicName(characteristicRepository.findByRefKey(item.getCharacteristicKey())
-//                                        .getDescription())
-//                                .batchName(batchRepository.findByRefKey(item.getBatchKey())
-//                                        .getDescription())
-//                                .quantityBalance(item.getQuantityBalance())
-//                                .amountBalance(item.getAmountBalance())
-//                                .build()
-//                );
-//            }
-//        }
-
         for (RollListItemResponseDto item : rollListResponseDto.getValue()) {
             if (item.getQuantityBalance().compareTo(0.0) > 0) {
                 String nomenclatureName = null;
                 String characteristicName = null;
                 String batchName = null;
+                BigDecimal batchWeight = null;
+                BigDecimal batchLength = null;
 
                 try {
                     NomenclatureEntity nomenclature = nomenclatureRepository.findByRefKey(item.getNomenclatureKey());
@@ -95,13 +80,35 @@ public class RollListServiceImpl implements RollListService {
                     batchName = "Не найдено";
                 }
 
+                try {
+                    BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
+                    if (batch != null) {
+                        batchWeight = batch.getWeight();
+                    }
+                } catch (Exception e) {
+                    System.err.println("Ошибка при получении Веса рулона по партии: " + e.getMessage());
+                    batchWeight = BigDecimal.valueOf(0.00);
+                }
+
+                try {
+                    BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
+                    if (batch != null) {
+                        batchLength = batch.getLength();
+                    }
+                } catch (Exception e) {
+                    System.err.println("Ошибка при получении Длины рулона по партии: " + e.getMessage());
+                    batchLength = BigDecimal.valueOf(0.00);
+                }
+
                 list.add(
                         RollListEntity.builder()
                                 .nomenclatureName(nomenclatureName)
                                 .characteristicName(characteristicName)
                                 .batchName(batchName)
                                 .quantityBalance(item.getQuantityBalance())
-                                .amountBalance(item.getAmountBalance())
+                                .weight(batchWeight)
+                                .length(batchLength)
+                                .location("Под краном")
                                 .build()
                 );
             }

@@ -1,5 +1,5 @@
 server:
-  port: 8686
+  port: 8080
 
 spring:
   config:
@@ -7,9 +7,9 @@ spring:
       - "optional:file:./config/application-secrets.yml"
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/serviceonec_db
-    username: serviceonec_user
-    password: serviceonec_password
+    url: jdbc:postgresql://localhost:5433/db
+    username: user
+    password: password
     driverClassName: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10

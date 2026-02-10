@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
@@ -20,6 +21,10 @@ public class RollListEntity {
 
     private Double quantityBalance;
 
-    private Double amountBalance;
+    private BigDecimal weight;
+
+    private BigDecimal length;
+
+    private String location;
 
 }
