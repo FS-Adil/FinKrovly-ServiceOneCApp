@@ -16,9 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -39,93 +37,103 @@ public class RollListServiceImpl implements RollListService {
 
         List<RollListEntity> list = new ArrayList<>();
 
-        RollListResponseDto rollListResponseDto = getResponse();
+        Map<String, String> oneCGuid = new HashMap<>();
+        oneCGuid.put(oneCProperties.getOneCGuid(), "Под краном");
+        oneCGuid.put(oneCProperties.getOneCGuidOpen(), "В цеху");
 
-        for (RollListItemResponseDto item : rollListResponseDto.getValue()) {
-            if (item.getQuantityBalance().compareTo(0.0) > 0) {
-                String nomenclatureName = null;
-                String characteristicName = null;
-                String batchName = null;
-                BigDecimal batchWeight = null;
-                BigDecimal batchLength = null;
+        for (Map.Entry<String, String> guid : oneCGuid.entrySet()) {
 
-                try {
-                    NomenclatureEntity nomenclature = nomenclatureRepository.findByRefKey(item.getNomenclatureKey());
-                    if (nomenclature != null) {
-                        nomenclatureName = nomenclature.getDescription();
-                    }
-                } catch (Exception e) {
-                    // Логирование или обработка ошибки
-                    System.err.println("Ошибка при получении номенклатуры: " + e.getMessage());
-                    nomenclatureName = "Не найдено";
+            RollListResponseDto rollListResponseDto = getResponse(guid.getKey(), guid.getValue());
+
+            for (RollListItemResponseDto item : rollListResponseDto.getValue()) {
+                if (item.getBatchKey().compareTo(UUID.fromString("00000000-0000-0000-0000-000000000000")) == 0) {
+                    continue;
                 }
+                if (item.getQuantityBalance().compareTo(0.0) > 0) {
+                    String nomenclatureName = null;
+                    String characteristicName = null;
+                    String batchName = null;
+                    BigDecimal batchWeight = null;
+                    BigDecimal batchLength = null;
 
-                try {
-                    CharacteristicEntity characteristic = characteristicRepository.findByRefKey(item.getCharacteristicKey());
-                    if (characteristic != null) {
-                        characteristicName = characteristic.getDescription();
+                    try {
+                        NomenclatureEntity nomenclature = nomenclatureRepository.findByRefKey(item.getNomenclatureKey());
+                        if (nomenclature != null) {
+                            nomenclatureName = nomenclature.getDescription();
+                        } else log.info("Номенкулатура {} не найдена", item.getNomenclatureKey());
+                    } catch (Exception e) {
+                        // Логирование или обработка ошибки
+                        log.info("Ошибка при получении номенклатуры: {}", e.getMessage());
+                        nomenclatureName = "Не найдено";
                     }
-                } catch (Exception e) {
-                    System.err.println("Ошибка при получении характеристики: " + e.getMessage());
-                    characteristicName = "Не найдено";
-                }
 
-                try {
-                    BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
-                    if (batch != null) {
-                        batchName = batch.getDescription();
+                    try {
+                        CharacteristicEntity characteristic = characteristicRepository.findByRefKey(item.getCharacteristicKey());
+                        if (characteristic != null) {
+                            characteristicName = characteristic.getDescription();
+                        } else log.info("Характеристика {} не найдена", item.getCharacteristicKey());
+                    } catch (Exception e) {
+                        log.info("Ошибка при получении характеристики: {}", e.getMessage());
+                        characteristicName = "Не найдено";
                     }
-                } catch (Exception e) {
-                    System.err.println("Ошибка при получении партии: " + e.getMessage());
-                    batchName = "Не найдено";
-                }
 
-                try {
-                    BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
-                    if (batch != null) {
-                        batchWeight = batch.getWeight();
+                    try {
+                        BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
+                        if (batch != null) {
+                            batchName = batch.getDescription();
+                        } else log.info("Партия {} не найдена", item.getBatchKey());
+                    } catch (Exception e) {
+                        log.info("Ошибка при получении партии: {}", e.getMessage());
+                        batchName = "Не найдено";
                     }
-                } catch (Exception e) {
-                    System.err.println("Ошибка при получении Веса рулона по партии: " + e.getMessage());
-                    batchWeight = BigDecimal.valueOf(0.00);
-                }
 
-                try {
-                    BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
-                    if (batch != null) {
-                        batchLength = batch.getLength();
+                    try {
+                        BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
+                        if (batch != null) {
+                            batchWeight = batch.getWeight();
+                        }
+                    } catch (Exception e) {
+                        log.info("Ошибка при получении Веса рулона по партии: {}", e.getMessage());
+                        batchWeight = BigDecimal.valueOf(0.00);
                     }
-                } catch (Exception e) {
-                    System.err.println("Ошибка при получении Длины рулона по партии: " + e.getMessage());
-                    batchLength = BigDecimal.valueOf(0.00);
-                }
 
-                list.add(
-                        RollListEntity.builder()
-                                .nomenclatureName(nomenclatureName)
-                                .characteristicName(characteristicName)
-                                .batchName(batchName)
-                                .quantityBalance(item.getQuantityBalance())
-                                .weight(batchWeight)
-                                .length(batchLength)
-                                .location("Под краном")
-                                .build()
-                );
+                    try {
+                        BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
+                        if (batch != null) {
+                            batchLength = batch.getLength();
+                        }
+                    } catch (Exception e) {
+                        log.info("Ошибка при получении Длины рулона по партии: {}", e.getMessage());
+                        batchLength = BigDecimal.valueOf(0.00);
+                    }
+
+                    list.add(
+                            RollListEntity.builder()
+                                    .nomenclatureName(nomenclatureName)
+                                    .characteristicName(characteristicName)
+                                    .batchName(batchName)
+                                    .quantityBalance(item.getQuantityBalance())
+                                    .weight(batchWeight)
+                                    .length(batchLength)
+                                    .location(guid.getValue())
+                                    .build()
+                    );
+                }
             }
         }
 
         return list;
     }
 
-    private RollListResponseDto getResponse() {
+    private RollListResponseDto getResponse(String key, String value) {
 
-        log.info("------> Старт метода по поиску в 1с всех Рулонов под краном");
+        log.info("------> Старт метода по поиску в 1с всех Рулонов {}", value);
 
         String url = String.format("/AccumulationRegister_Запасы/Balance(" +
                 "Condition='cast(СтруктурнаяЕдиница, 'Catalog_СтруктурныеЕдиницы') eq guid'%s'')" +
                 "?" +
                 "$select=Номенклатура_Key, Характеристика_Key, Партия_Key, КоличествоBalance, СуммаBalance&" +
-                "$format=json", oneCProperties.getOneCGuid());
+                "$format=json", key);
 
         RollListResponseDto response;
 
@@ -144,7 +152,7 @@ public class RollListServiceImpl implements RollListService {
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех Рулонов под краном");
+        log.info("------> Конец метода по поиску в 1с всех Рулонов {}", value);
 
         return response;
     }
