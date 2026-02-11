@@ -1,9 +1,8 @@
 package com.example.serviceonec.service;
 
 import com.example.serviceonec.model.entity.NomenclatureEntity;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
 
 public interface NomenclatureService {
-    List<NomenclatureEntity> getAllNomenclature();
+    Page<NomenclatureEntity> getAllNomenclature();
 }

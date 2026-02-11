@@ -14,4 +14,6 @@ public class OneCProperties {
     private String username;
     private String password;
     private String oneCGuid;
+    private String oneCGuidOpen;
+    private String oneCGuidCategory;
 }

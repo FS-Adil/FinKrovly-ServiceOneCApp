@@ -10,6 +10,8 @@ import com.example.serviceonec.model.mapper.CharacteristicMapper;
 import com.example.serviceonec.repository.CharacteristicRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,7 +26,7 @@ public class CharacteristicServiceImpl implements CharacteristicService{
     private final CharacteristicRepository characteristicRepository;
 
     @Override
-    public List<CharacteristicEntity> getAllCharacteristic() {
+    public Page<CharacteristicEntity> getAllCharacteristic() {
 
         characteristicRepository.deleteAll();
 
@@ -36,7 +38,7 @@ public class CharacteristicServiceImpl implements CharacteristicService{
 
 
         log.info("------> Все Характеристики из 1с найдены и сохранены в базу");
-        return characteristicRepository.findAll();
+        return characteristicRepository.findAll(PageRequest.of(0, 10));
     }
 
     private CharacteristicResponseDto getCharacteristic() {

@@ -8,6 +8,8 @@ import com.example.serviceonec.model.mapper.NomenclatureMapper;
 import com.example.serviceonec.repository.NomenclatureRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,7 +24,7 @@ public class NomenclatureServiceImpl implements NomenclatureService {
     private final NomenclatureRepository nomenclatureRepository;
 
     @Override
-    public List<NomenclatureEntity> getAllNomenclature() {
+    public Page<NomenclatureEntity> getAllNomenclature() {
 
         nomenclatureRepository.deleteAll();
 
@@ -34,7 +36,7 @@ public class NomenclatureServiceImpl implements NomenclatureService {
 
 
         log.info("------> Все Номенклатуры из 1с найдены и сохранены в базу");
-        return nomenclatureRepository.findAll();
+        return nomenclatureRepository.findAll(PageRequest.of(0, 10));
     }
 
     private NomenclatureResponseDto getNomenclature() {

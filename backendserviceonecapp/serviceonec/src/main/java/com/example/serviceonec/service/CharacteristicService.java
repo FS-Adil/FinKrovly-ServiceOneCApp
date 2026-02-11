@@ -1,9 +1,8 @@
 package com.example.serviceonec.service;
 
 import com.example.serviceonec.model.entity.CharacteristicEntity;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
 
 public interface CharacteristicService {
-    List<CharacteristicEntity> getAllCharacteristic();
+    Page<CharacteristicEntity> getAllCharacteristic();
 }

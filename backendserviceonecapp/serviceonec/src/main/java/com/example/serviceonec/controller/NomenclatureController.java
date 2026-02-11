@@ -4,6 +4,7 @@ import com.example.serviceonec.model.entity.NomenclatureEntity;
 import com.example.serviceonec.service.NomenclatureService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,9 +23,9 @@ public class NomenclatureController {
     private final NomenclatureService nomenclatureService;
 
     @GetMapping("/save-all-nomenclature")
-    public ResponseEntity<List<NomenclatureEntity>> getAllNomenclature() {
+    public ResponseEntity<Page<NomenclatureEntity>> getAllNomenclature() {
 
-        List<NomenclatureEntity> nomenclatureEntities = nomenclatureService.getAllNomenclature();
+        Page<NomenclatureEntity> nomenclatureEntities = nomenclatureService.getAllNomenclature();
 
         if (nomenclatureEntities.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "not found");

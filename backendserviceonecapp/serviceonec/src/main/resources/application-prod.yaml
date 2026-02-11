@@ -61,3 +61,4 @@ one-c:
     username: ${ONE_C_ODATA_USERNAME:}
     password: ${ONE_C_ODATA_PASSWORD:}
     one-c-guid: ${ONE_C_GUID}
+    one-c-guid-open: ${ONE_C_GUID_OPEN}
