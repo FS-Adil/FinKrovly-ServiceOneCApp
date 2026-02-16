@@ -40,6 +40,7 @@ public class RollListServiceImpl implements RollListService {
         Map<String, String> oneCGuid = new HashMap<>();
         oneCGuid.put(oneCProperties.getOneCGuid(), "Под краном");
         oneCGuid.put(oneCProperties.getOneCGuidOpen(), "В цеху");
+        oneCGuid.put(oneCProperties.getOneCGuidDefective(), "БРАК");
 
         for (Map.Entry<String, String> guid : oneCGuid.entrySet()) {
 
