@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -61,6 +62,41 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
         log.info("------> Все ЗАПАСЫ из приходников в 1с найдены и сохранены в базу");
         return invoiceStocksRepository.findAll();
     }
+
+    @Override
+    public void getInvoiceStocksById(UUID uuid) {
+        String url = String.format("Document_ПриходнаяНакладная_Запасы?" +
+                "$filter=Номенклатура_Key eq guid'%s'&" +
+                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                "$format=json", uuid);
+
+//        log.info("{}", url);
+
+        InvoiceStocksResponseDto response;
+
+        try {
+
+            response = restClientConfig.restClient().get()
+                    .uri(url)
+                    .retrieve()
+                    .body(InvoiceStocksResponseDto.class);
+
+        } catch (Exception e) {
+            // Логирование ошибки
+            log.error(
+                    String.format("Ошибка при получении ЗАПАСОВ из приходных накладных по id %s", uuid), String.valueOf(e)
+            );
+            throw new RuntimeException("Ошибка получения данных из 1С", e);
+        }
+
+        assert response != null;
+        for (InvoiceStocksItemResponseDto value : response.getValue()) {
+            invoiceStocksRepository.save(invoiceStocksMapper.toEntity(value));
+        }
+
+//        log.info("------> Конец метода по поиску в 1с всех ЗАПАСОВ из приходника по id");
+    }
+
 
     private InvoiceStocksResponseDto getInvoiceStocks(Integer top, Integer skip) {
         log.info("------> Старт метода по поиску в 1с всех ЗАПАСОВ из приходника");

@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -28,10 +29,18 @@ public class ExpendController {
         LocalDateTime endDate = LocalDateTime.of(2025, 12, 31, 23, 59, 59);
 
 //        Optional<InvoiceResponseDto> invoiceResponseDtoOptional = Optional.ofNullable(invoiceService.getAllInvoice(startDate, endDate));
-        List<ExpendEntity> expendEntities = expendService.getAllExpend(startDate, endDate);
+        UUID randomUUID = UUID.randomUUID();
+        List<ExpendEntity> expendEntities = expendService.getAllExpend(
+                randomUUID,
+                startDate,
+                endDate
+        );
 
         if (expendEntities.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "not found");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    String.format("Нет данных по данному UUID - %s", randomUUID)
+            );
         }
         return ResponseEntity.ok(expendEntities);
     }

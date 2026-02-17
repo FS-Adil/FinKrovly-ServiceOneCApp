@@ -1,5 +1,6 @@
 package com.example.serviceonec.service.assembly_expend;
 
+import com.example.serviceonec.controller.assembly.output.AssemblyExpendControllerOutput;
 import com.example.serviceonec.model.entity.CharacteristicEntity;
 import com.example.serviceonec.model.entity.NomenclatureEntity;
 import com.example.serviceonec.model.entity.assembly.AssemblyExpendEntity;
@@ -13,6 +14,12 @@ import com.example.serviceonec.repository.expend.ExpendRepository;
 import com.example.serviceonec.repository.expend.ExpendStocksRepository;
 import com.example.serviceonec.repository.inventory.InventoryStocksRepository;
 import com.example.serviceonec.repository.invoice.InvoiceStocksRepository;
+import com.example.serviceonec.service.NomenclatureService;
+import com.example.serviceonec.service.expend.ExpendService;
+import com.example.serviceonec.service.expend.ExpendServiceImpl;
+import com.example.serviceonec.service.expend.ExpendStocksService;
+import com.example.serviceonec.service.invoice.InvoiceService;
+import com.example.serviceonec.service.invoice.InvoiceStocksService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -21,6 +28,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +44,11 @@ public class AssemblyExpendServiceImpl implements AssemblyExpendService{
     private final NomenclatureRepository nomenclatureRepository;
     private final CharacteristicRepository characteristicRepository;
     private final InvoiceStocksRepository invoiceStocksRepository;
+
+    private final ExpendService expendService;
+    private final ExpendStocksService expendStocksService;
+    private final InvoiceStocksService invoiceStocksService;
+    private final NomenclatureService nomenclatureService;
 
 
     @Override
@@ -154,5 +168,72 @@ public class AssemblyExpendServiceImpl implements AssemblyExpendService{
         } while (pageNumber < page.getTotalPages());
 
         return assemblyExpendRepository.findAll(PageRequest.of(0, 10));
+    }
+
+    @Override
+    public List<AssemblyExpendControllerOutput> findAllExpendCost(
+            UUID organizationId,
+            LocalDateTime dateFrom,
+            LocalDateTime dateTo)
+    {
+        expendService.getAllExpend(organizationId, dateFrom, dateTo);
+
+//        Pageable pageable = PageRequest.of(0, 10);
+        List<ExpendEntity> page = expendRepository.findAll();
+
+        List<AssemblyExpendControllerOutput> list = new ArrayList<>();
+
+        for (ExpendEntity expend : page)
+        {
+            log.info("Расходная накладная - {}", expend.getDate());
+
+            List<ExpendStocksEntity> expendStocksEntityList = expendStocksRepository
+                    .findAllByRefKey(expend.getRefKey());
+            if (expendStocksEntityList.isEmpty()) {
+                expendStocksService.findExpendStocksById(expend.getRefKey());
+
+                expendStocksEntityList = expendStocksRepository
+                        .findAllByRefKey(expend.getRefKey());
+            }
+            ExpendStocksEntity expendStocksEntity = expendStocksEntityList.getFirst();
+
+            NomenclatureEntity nomenclatureEntity = nomenclatureRepository
+                    .findByRefKey(expendStocksEntity.getNomenclatureKey());
+
+            if (nomenclatureEntity == null) {
+                nomenclatureService.getAllNomenclature();
+
+                nomenclatureEntity = nomenclatureRepository
+                        .findByRefKey(expendStocksEntity.getNomenclatureKey());
+            }
+
+
+            List<InvoiceStocksEntity> invoiceStocksEntityList = invoiceStocksRepository
+                    .findAllByNomenclatureKey(nomenclatureEntity.getRefKey());
+            try {
+                if (invoiceStocksEntityList.isEmpty()) {
+                    invoiceStocksService.getInvoiceStocksById(nomenclatureEntity.getRefKey());
+
+                    invoiceStocksRepository
+                            .findAllByNomenclatureKey(nomenclatureEntity.getRefKey());
+                }
+            } catch (Exception e) {
+                log.error("{}", e.toString());
+                log.warn("Нет данных по приходнику на следующий материал {}", nomenclatureEntity.getDescription());
+                continue;
+            }
+
+            list.add(
+                    AssemblyExpendControllerOutput.builder()
+                            .name(nomenclatureEntity.getDescription())
+                            .quantity(expendStocksEntity.getQuantity().doubleValue()
+                            )
+                            .price(expendStocksEntity.getPrice().doubleValue())
+                            .cost(invoiceStocksEntityList.getFirst().getPrice().doubleValue())
+                            .build()
+            );
+        }
+
+        return list;
     }
 }

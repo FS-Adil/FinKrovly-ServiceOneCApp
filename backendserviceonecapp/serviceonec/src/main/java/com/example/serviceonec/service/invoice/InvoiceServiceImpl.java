@@ -40,7 +40,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         while (isStop) {
 
-            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
             InvoiceResponseDto invoiceResponseDto = getInvoice(top, skip);
 
@@ -65,7 +65,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
         }
 
-        log.info("------> Все приходники из 1с найдены и сохранены в базу");
+//        log.info("------> Все приходники из 1с найдены и сохранены в базу");
         return invoiceRepository.findAll();
     }
 
@@ -100,7 +100,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех приходников");
+//        log.info("------> Конец метода по поиску в 1с всех приходников");
         return response;
     }
 }
