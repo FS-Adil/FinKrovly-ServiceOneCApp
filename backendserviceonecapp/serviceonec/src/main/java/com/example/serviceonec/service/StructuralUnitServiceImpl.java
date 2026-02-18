@@ -24,6 +24,8 @@ public class StructuralUnitServiceImpl implements StructuralUnitService{
     @Override
     public Page<StructuralUnitEntity> getAllStructuralUnit() {
 
+        log.info("--------> StructuralUnitServiceImpl --------> getAllStructuralUnit");
+
         structuralUnitRepository.deleteAll();
 
         StructuralUnitResponseDto structuralUnitResponseDto = gerResponse();
@@ -40,7 +42,7 @@ public class StructuralUnitServiceImpl implements StructuralUnitService{
 
     private StructuralUnitResponseDto gerResponse() {
 
-        log.info("------> Старт метода по поиску в 1с всех Структурных Едениц");
+//        log.info("------> Старт метода по поиску в 1с всех Структурных Едениц");
         String url = "/Catalog_СтруктурныеЕдиницы?" +
                 "$select=Ref_Key,Code,Description,ТипСтруктурнойЕдиницы,Организация_Key&" +
                 "$format=json";
@@ -62,8 +64,7 @@ public class StructuralUnitServiceImpl implements StructuralUnitService{
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех Структурных Едениц");
-
+//        log.info("------> Конец метода по поиску в 1с всех Структурных Едениц");
 
         return response;
     }

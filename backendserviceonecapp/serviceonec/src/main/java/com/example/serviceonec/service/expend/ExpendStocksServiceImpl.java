@@ -31,19 +31,17 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
     @Override
     public Page<ExpendStocksEntity> getAllExpendStocks() {
 
+        log.info("------> ExpendStocksServiceImpl ------> getAllExpendStocks");
+
         expendStocksRepository.deleteAll();
 
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-//        String startStr = startDate.format(formatter);
-//        String endStr = endDate.format(formatter);
-
         boolean isStop = true;
-        int top = 100;
+        int top = 500;
         int skip = 0;
 
         while (isStop) {
 
-            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
             ExpendStocksResponseDto expendStocksResponseDto = getExpendStocks(top, skip);
 
@@ -111,7 +109,7 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
     }
 
     private ExpendStocksResponseDto getExpendStocks(Integer top, Integer skip) {
-        log.info("------> Старт метода по поиску в 1с всех ЗАПАСОВ из расходника");
+//        log.info("------> Старт метода по поиску в 1с всех ЗАПАСОВ из расходника");
 
         String url = String.format("/Document_РасходнаяНакладная_Запасы?" +
 //                "$filter=Date ge datetime'" + startStr + "' " +
@@ -138,7 +136,7 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех ЗАПАСОВ из расходников");
+//        log.info("------> Конец метода по поиску в 1с всех ЗАПАСОВ из расходников");
         return response;
     }
 }

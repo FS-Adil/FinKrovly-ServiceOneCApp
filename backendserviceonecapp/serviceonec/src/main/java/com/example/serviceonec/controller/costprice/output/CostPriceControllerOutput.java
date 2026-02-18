@@ -1,8 +1,12 @@
 package com.example.serviceonec.controller.costprice.output;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@Builder
 public class CostPriceControllerOutput {
 
     private String name;

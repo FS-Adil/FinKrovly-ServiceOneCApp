@@ -8,6 +8,8 @@ import com.example.serviceonec.model.mapper.invoice.InvoiceStocksMapper;
 import com.example.serviceonec.repository.invoice.InvoiceStocksRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,7 +26,9 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
     private final InvoiceStocksMapper invoiceStocksMapper;
 
     @Override
-    public List<InvoiceStocksEntity> getAllInvoiceStocks() {
+    public Page<InvoiceStocksEntity> getAllInvoiceStocks() {
+
+        log.info("-------> InvoiceStocksServiceImpl -------> getAllInvoiceStocks");
 
         invoiceStocksRepository.deleteAll();
 
@@ -33,12 +37,12 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
 //        String endStr = endDate.format(formatter);
 
         boolean isStop = true;
-        int top = 100;
+        int top = 500;
         int skip = 0;
 
         while (isStop) {
 
-            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
             InvoiceStocksResponseDto invoiceStocksResponseDto = getInvoiceStocks(top, skip);
 
@@ -60,7 +64,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
         }
 
         log.info("------> Все ЗАПАСЫ из приходников в 1с найдены и сохранены в базу");
-        return invoiceStocksRepository.findAll();
+        return invoiceStocksRepository.findAll(PageRequest.of(0, 10));
     }
 
     @Override
@@ -99,7 +103,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
 
 
     private InvoiceStocksResponseDto getInvoiceStocks(Integer top, Integer skip) {
-        log.info("------> Старт метода по поиску в 1с всех ЗАПАСОВ из приходника");
+//        log.info("------> Старт метода по поиску в 1с всех ЗАПАСОВ из приходника");
 
         String url = String.format("/Document_ПриходнаяНакладная_Запасы?" +
 //                "$filter=Date ge datetime'" + startStr + "' " +
@@ -126,7 +130,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех ЗАПАСОВ из приходников");
+//        log.info("------> Конец метода по поиску в 1с всех ЗАПАСОВ из приходников");
         return response;
     }
 }

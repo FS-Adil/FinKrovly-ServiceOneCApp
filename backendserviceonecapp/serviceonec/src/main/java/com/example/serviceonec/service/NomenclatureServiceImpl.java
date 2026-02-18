@@ -26,6 +26,8 @@ public class NomenclatureServiceImpl implements NomenclatureService {
     @Override
     public Page<NomenclatureEntity> getAllNomenclature() {
 
+        log.info("-------> NomenclatureServiceImpl --------> getAllNomenclature");
+
         nomenclatureRepository.deleteAll();
 
         NomenclatureResponseDto nomenclatureResponseDto = getNomenclature();
@@ -40,7 +42,7 @@ public class NomenclatureServiceImpl implements NomenclatureService {
     }
 
     private NomenclatureResponseDto getNomenclature() {
-        log.info("------> Старт метода по поиску в 1с всех Номенклатур");
+//        log.info("------> Старт метода по поиску в 1с всех Номенклатур");
         String url = "/Catalog_Номенклатура?" +
 //                "$filter=DeletionMark eq false&" +
                 "$select=Description,Code,Ref_Key&" +
@@ -63,7 +65,7 @@ public class NomenclatureServiceImpl implements NomenclatureService {
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех Номенклатур");
+//        log.info("------> Конец метода по поиску в 1с всех Номенклатур");
         return response;
     }
 }

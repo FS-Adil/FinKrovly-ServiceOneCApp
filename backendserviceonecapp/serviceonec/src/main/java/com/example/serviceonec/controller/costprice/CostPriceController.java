@@ -6,6 +6,7 @@ import com.example.serviceonec.controller.assembly.output.AssemblyExpendControll
 import com.example.serviceonec.controller.costprice.output.CostPriceControllerOutput;
 import com.example.serviceonec.service.costprice.CostPriceService;
 import com.example.serviceonec.service.expend.ExpendService;
+import com.example.serviceonec.service.invoice.InvoiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +28,10 @@ public class CostPriceController {
 
     private final CostPriceService costPriceService;
     private final ExpendService expendService;
+    private final InvoiceService invoiceService;
 
     @PostMapping("/assembly")
-    public ResponseEntity<List<AssemblyExpendControllerOutput>> getAllAssemblyExpendCostPrice(
+    public ResponseEntity<List<CostPriceControllerOutput>> getAllAssemblyExpendCostPrice(
             @Valid @RequestBody AssemblyExpendControllerInput request
     ) {
 
@@ -37,6 +39,10 @@ public class CostPriceController {
                 request.getOrganizationId(),
                 request.getDateFrom(),
                 request.getDateTo()
+        );
+
+        invoiceService.getAllInvoice(
+                request.getOrganizationId()
         );
 
         List<CostPriceControllerOutput> list = costPriceService.getAllCostPrice();
@@ -48,7 +54,7 @@ public class CostPriceController {
             );
         }
 
-        return ResponseEntity.ok(List.of());
+        return ResponseEntity.ok(list);
     }
 
 }

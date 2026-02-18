@@ -9,6 +9,8 @@ import com.example.serviceonec.repository.expend.ExpendRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -26,16 +28,18 @@ public class ExpendServiceImpl implements ExpendService {
     private final ExpendMapper expendMapper;
 
     @Override
-    public List<ExpendEntity> getAllExpend(
+    public Page<ExpendEntity> getAllExpend(
             UUID organizationId,
             LocalDateTime startDate,
             LocalDateTime endDate
     ) {
 
+        log.info("-----> ExpendServiceImpl -----> getAllExpend");
+
         expendRepository.deleteAll();
 
         boolean isStop = true;
-        int top = 300;
+        int top = 500;
         int skip = 0;
 
         while (isStop) {
@@ -71,9 +75,9 @@ public class ExpendServiceImpl implements ExpendService {
             }
         }
 
-//        log.info("------> Все расходники из 1с найдены и сохранены в базу");
+        log.info("------> Все расходники из 1с за период с {} по {} найдены и сохранены в базу", startDate, endDate);
 
-        return expendRepository.findAll();
+        return expendRepository.findAll(PageRequest.of(0, 10));
     }
 
     private ExpendResponseDto getExpend(
