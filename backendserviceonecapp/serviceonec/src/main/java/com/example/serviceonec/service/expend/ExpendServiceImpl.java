@@ -9,10 +9,13 @@ import com.example.serviceonec.repository.expend.ExpendRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -25,19 +28,26 @@ public class ExpendServiceImpl implements ExpendService {
     private final ExpendMapper expendMapper;
 
     @Override
-    public List<ExpendEntity> getAllExpend(LocalDateTime startDate, LocalDateTime endDate) {
+    public Page<ExpendEntity> getAllExpend(
+            UUID organizationId,
+            LocalDateTime startDate,
+            LocalDateTime endDate
+    ) {
+
+        log.info("-----> ExpendServiceImpl -----> getAllExpend");
 
         expendRepository.deleteAll();
 
         boolean isStop = true;
-        int top = 100;
+        int top = 500;
         int skip = 0;
 
         while (isStop) {
 
-            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
             ExpendResponseDto expendResponseDto = getExpend(
+                    organizationId,
                     startDate,
                     endDate,
                     top,
@@ -65,21 +75,22 @@ public class ExpendServiceImpl implements ExpendService {
             }
         }
 
-        log.info("------> Все расходники из 1с найдены и сохранены в базу");
+        log.info("------> Все расходники из 1с за период с {} по {} найдены и сохранены в базу", startDate, endDate);
 
-        return expendRepository.findAll();
+        return expendRepository.findAll(PageRequest.of(0, 10));
     }
 
     private ExpendResponseDto getExpend(
+            UUID organizationId,
             LocalDateTime startDate,
             LocalDateTime endDate,
             Integer top,
             Integer skip
     ) {
-        log.info("------> Старт метода по поиску в 1с всех расходников");
+//        log.info("------> Старт метода по поиску в 1с всех расходников");
         String url = String.format("/Document_РасходнаяНакладная?" +
                 "$filter=Posted eq true" +
-//                " and ВидОперации eq 'ПоступлениеОтПоставщика'" +
+                " and Организация_Key eq guid'" + organizationId + "'" +
                     " and Date ge datetime'" + startDate + "'" +
                     " and Date le datetime'" + endDate + "'" +
                 "&" +
@@ -105,7 +116,7 @@ public class ExpendServiceImpl implements ExpendService {
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех расходников");
+//        log.info("------> Конец метода по поиску в 1с всех расходников");
         return response;
     }
 }

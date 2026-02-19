@@ -28,6 +28,8 @@ public class CharacteristicServiceImpl implements CharacteristicService{
     @Override
     public Page<CharacteristicEntity> getAllCharacteristic() {
 
+        log.info("--------> CharacteristicServiceImpl -------> getAllCharacteristic");
+
         characteristicRepository.deleteAll();
 
         CharacteristicResponseDto characteristicResponseDto = getCharacteristic();
@@ -42,7 +44,7 @@ public class CharacteristicServiceImpl implements CharacteristicService{
     }
 
     private CharacteristicResponseDto getCharacteristic() {
-        log.info("------> Старт метода по поиску в 1с всех Характеристик");
+//        log.info("------> Старт метода по поиску в 1с всех Характеристик");
         String url = "/Catalog_ХарактеристикиНоменклатуры?" +
 //                "$filter=DeletionMark eq false&" +
                 "$select=Description,Code,Ref_Key&" +
@@ -65,7 +67,7 @@ public class CharacteristicServiceImpl implements CharacteristicService{
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех Характеристик");
+//        log.info("------> Конец метода по поиску в 1с всех Характеристик");
         return response;
     }
 }

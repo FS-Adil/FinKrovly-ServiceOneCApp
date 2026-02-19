@@ -43,6 +43,8 @@ public class ProductionServiceImpl implements ProductionService{
     @Override
     public Page<ProductionEntity> getAllProduction(LocalDateTime startDate, LocalDateTime endDate) {
 
+        log.info("-------> ProductionServiceImpl -------> getAllProduction");
+
         productionRepository.deleteAll();
         log.info("------> Очистка таблицы productions");
         productionStocksRepository.deleteAll();
@@ -51,12 +53,12 @@ public class ProductionServiceImpl implements ProductionService{
         log.info("------> Очистка таблицы production_items");
 
         boolean isStop = true;
-        int top = 100;
+        int top = 500;
         int skip = 0;
 
         while (isStop) {
 
-            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
             ProductionResponseDto productionResponseDto = getResponse(
                     top,
@@ -75,26 +77,26 @@ public class ProductionServiceImpl implements ProductionService{
                     try {
                         UUID refKey = value.getRefKey();
                         productionRepository.save(productionMapper.toEntity(value));
-                        log.info("------> Документ производство ref_key({}) из top({}) - skip({})  найдены и сохранены в базу", refKey, top, skip);
+//                        log.info("------> Документ производство ref_key({}) из top({}) - skip({})  найдены и сохранены в базу", refKey, top, skip);
 
                         for (ProductionItemResponseDto.ProductionStocksDto stock
                                 : value.getStocks()) {
                             productionStocksRepository.save(productionStocksMapper.toEntity(stock));
                         }
-                        log.info("------> Документ производство ref_key({}) ЗАПАСЫ из top({}) - skip({})  найдены и сохранены в базу", refKey, top, skip);
+//                        log.info("------> Документ производство ref_key({}) ЗАПАСЫ из top({}) - skip({})  найдены и сохранены в базу", refKey, top, skip);
 
                         for (ProductionItemResponseDto.ProductionItemsDto item
                                 : value.getProducts()) {
                             productionItemsRepository.save(productionItemsMapper.toEntity(item));
                         }
-                        log.info("------> Документ производство ref_key({}) ПРОДУКЦИЯ из top({}) - skip({})  найдены и сохранены в базу", refKey, top, skip);
+//                        log.info("------> Документ производство ref_key({}) ПРОДУКЦИЯ из top({}) - skip({})  найдены и сохранены в базу", refKey, top, skip);
 
                     } catch (DataIntegrityViolationException e) {
                         log.error("Ошибка целостности данных: {}", e.getMessage());
                     }
                 }
 
-            log.info("------> Производства из top({}) - skip({})  найдены и сохранены в базу", top, skip);
+//            log.info("------> Производства из top({}) - skip({})  найдены и сохранены в базу", top, skip);
 
             skip+=top;
 
@@ -127,7 +129,7 @@ public class ProductionServiceImpl implements ProductionService{
             LocalDateTime endDate
     ) {
 
-        log.info("------> Старт метода по поиску в 1с всех Производств");
+//        log.info("------> Старт метода по поиску в 1с всех Производств");
 
         String url = String.format("/Document_СборкаЗапасов?" +
                 "$filter=Posted eq true" +
@@ -157,7 +159,7 @@ public class ProductionServiceImpl implements ProductionService{
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех Производств");
+//        log.info("------> Конец метода по поиску в 1с всех Производств");
 
         return response;
     }

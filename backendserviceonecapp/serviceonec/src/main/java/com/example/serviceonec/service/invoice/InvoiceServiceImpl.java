@@ -9,9 +9,12 @@ import com.example.serviceonec.repository.invoice.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -24,25 +27,26 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final InvoiceRepository invoiceRepository;
 
     @Override
-    public List<InvoiceEntity> getAllInvoice(
-//            LocalDateTime startDate, LocalDateTime endDate
+    public Page<InvoiceEntity> getAllInvoice(
+            UUID organizationId
     ) {
+        log.info("-------> InvoiceServiceImpl -------> getAllInvoice");
 
         invoiceRepository.deleteAll();
 
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-//        String startStr = startDate.format(formatter);
-//        String endStr = endDate.format(formatter);
-
         boolean isStop = true;
-        int top = 100;
+        int top = 500;
         int skip = 0;
 
         while (isStop) {
 
-            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
-            InvoiceResponseDto invoiceResponseDto = getInvoice(top, skip);
+            InvoiceResponseDto invoiceResponseDto = getInvoice(
+                    organizationId,
+                    top,
+                    skip
+            );
 
             if (invoiceResponseDto.getValue().isEmpty()) {
                 isStop = false;
@@ -66,15 +70,19 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
 
         log.info("------> Все приходники из 1с найдены и сохранены в базу");
-        return invoiceRepository.findAll();
+        return invoiceRepository.findAll(PageRequest.of(0, 10));
     }
 
 
-    private InvoiceResponseDto getInvoice(Integer top, Integer skip) {
-        log.info("------> Старт метода по поиску в 1с всех приходников");
+    private InvoiceResponseDto getInvoice(
+            UUID organizationId,
+            Integer top,
+            Integer skip
+    ) {
+//        log.info("------> Старт метода по поиску в 1с всех приходников");
         String url = String.format("/Document_ПриходнаяНакладная?" +
                 "$filter=Posted eq true" +
-//                " and ВидОперации eq 'ПоступлениеОтПоставщика'" +
+                " and Организация_Key eq guid'" + organizationId + "'" +
 //                    "and Date ge datetime'" + startStr + "' " +
 //                    "and Date le datetime'" + endStr + "'" +
                 "&" +
@@ -100,7 +108,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех приходников");
+//        log.info("------> Конец метода по поиску в 1с всех приходников");
         return response;
     }
 }

@@ -42,7 +42,7 @@ public class BatchServiceImpl implements BatchService {
 
         while (isStop) {
 
-            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
             BatchResponseDto batchResponseDto = getResponse(
                     top,
@@ -80,7 +80,7 @@ public class BatchServiceImpl implements BatchService {
             Integer top,
             Integer skip
     ) {
-        log.info("------> Старт метода по поиску в 1с всех Партий");
+//        log.info("------> Старт метода по поиску в 1с всех Партий");
         String url = String.format("/Catalog_ПартииНоменклатуры?" +
                 "$select=Ref_Key,Description,Code,Цена,Вес,Количество,Длина,ДатаПартии&" +
                 "$top=%s&$skip=%s&" +
@@ -103,7 +103,7 @@ public class BatchServiceImpl implements BatchService {
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
 
-        log.info("------> Конец метода по поиску в 1с всех Партий");
+//        log.info("------> Конец метода по поиску в 1с всех Партий");
 
         return response;
     }
