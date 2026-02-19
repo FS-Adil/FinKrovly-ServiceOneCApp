@@ -45,7 +45,9 @@ public class CostPriceController {
                 request.getOrganizationId()
         );
 
-        List<CostPriceControllerOutput> list = costPriceService.getAllCostPrice();
+        List<CostPriceControllerOutput> list = costPriceService.getAllCostPrice(
+                request.getOrganizationId()
+        );
 
         if (list.isEmpty()) {
             throw new ResponseStatusException(
