@@ -42,7 +42,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
 
         while (isStop) {
 
-//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
             InvoiceStocksResponseDto invoiceStocksResponseDto = getInvoiceStocks(top, skip);
 

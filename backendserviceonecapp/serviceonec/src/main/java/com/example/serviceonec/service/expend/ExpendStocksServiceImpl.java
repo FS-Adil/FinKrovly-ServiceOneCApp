@@ -41,7 +41,7 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
 
         while (isStop) {
 
-//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
             ExpendStocksResponseDto expendStocksResponseDto = getExpendStocks(top, skip);
 

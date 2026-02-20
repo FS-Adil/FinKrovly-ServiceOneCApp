@@ -58,12 +58,17 @@ public class CostPriceServiceImpl implements CostPriceService {
 
 
         for (ExpendEntity expend : expendList) {
-//            log.info("for ---> ExpendEntity expend : expendList");
+            log.info("for ---> ExpendEntity expend : expendList");
             UUID expendRefKey = expend.getRefKey();
             if (!expendStocksMap.containsKey(expendRefKey)) {
                 log.info("В Запасы расходниках такой позиции нет - {}", expendRefKey);
                 continue;
             }
+
+            log.info("expendList ---- {} -------> {}---------> {}",
+                    expendRefKey,
+                    expendStocksMap.get(expendRefKey).toString(),
+                    expendStocksMap.size());
 
             for (ExpendStocksEntity expendStocksEntity : expendStocksMap.get(expendRefKey)) {
                 log.info("for -----> ExpendStocksEntity expendStocksEntity : expendStocksMap.get(expendRefKey)");
