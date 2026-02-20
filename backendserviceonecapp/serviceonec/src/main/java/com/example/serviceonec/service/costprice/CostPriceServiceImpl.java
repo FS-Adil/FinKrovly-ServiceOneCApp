@@ -45,11 +45,11 @@ public class CostPriceServiceImpl implements CostPriceService {
 
     @Override
     public List<CostPriceControllerOutput> getAllCostPrice(UUID organizationId) {
-        log.info("--------> CostPriceServiceImpl --------> getAllCostPrice");
+        log.info("Start--------> CostPriceServiceImpl --------> getAllCostPrice");
         List<CostPriceControllerOutput> list = new ArrayList<>();
 
         List<ExpendEntity> expendList = findAllExpend();
-        Map<UUID, List<ExpendStocksEntity>> expendStocksMap = createMapForExpendStocks();
+        Map<UUID, List<ExpendStocksEntity>> expendStocksMap = createMapForExpendStocks(expendList);
         createMapForInvoiceStocks(); // this.invoiceStocksMap создаем на основе данных из бд
         createMapForRemainigStocks(organizationId); // this.remainigStocksMap создаем структуру для хранения остатков товаров по id организации
         updateMapForInvoiceStocks(); // this.invoiceStocksMap изменяем исходя из остатков на складе, то есть убираем из структуры количество, которое числится в остатке
@@ -95,10 +95,12 @@ public class CostPriceServiceImpl implements CostPriceService {
 //                log.info(list.toString());
             }
         }
+        log.info("Finish--------> CostPriceServiceImpl --------> getAllCostPrice");
         return list;
     }
 
     private double getCostForNomenclature(UUID nomenclatureKey, double quantity){
+        log.info("Start--------> CostPriceServiceImpl --------> getCostForNomenclature");
         List<InvoiceStocksEntity> invoiceStocksList = this.invoiceStocksMap.get(nomenclatureKey);
 
         for (int i = 0; i < invoiceStocksList.size(); i++) {
@@ -113,6 +115,7 @@ public class CostPriceServiceImpl implements CostPriceService {
                 log.info("после ------>{}------->{}", invoiceStocksList.get(i).getQuantity(), nomenclatureKey);
                 this.invoiceStocksMap.replace(nomenclatureKey, invoiceStocksList);
 
+                log.info("Finish--------> CostPriceServiceImpl --------> getCostForNomenclature");
                 return entity.getPrice().doubleValue();
             }
         }
@@ -121,14 +124,17 @@ public class CostPriceServiceImpl implements CostPriceService {
     }
 
     private List<ExpendEntity> findAllExpend() {
+        log.info("--------> CostPriceServiceImpl --------> findAllExpend");
         return expendRepository.findAll();
     }
 
     private List<InvoiceEntity> findAllInvoice() {
+        log.info("--------> CostPriceServiceImpl --------> findAllInvoice");
         return invoiceRepository.findAll();
     }
 
     private Map<UUID, String> createMapForNomenclature() {
+        log.info("Start --------> CostPriceServiceImpl --------> createMapForNomenclature");
         List<NomenclatureEntity> entities = nomenclatureRepository.findAll();
 
         // Оптимизация: задаем правильную начальную емкость
@@ -146,6 +152,7 @@ public class CostPriceServiceImpl implements CostPriceService {
     }
 
     private void updateMapForInvoiceStocks() {
+        log.info("Start --------> CostPriceServiceImpl --------> updateMapForInvoiceStocks");
         List<UUID> keysList = new ArrayList<>(this.invoiceStocksMap.keySet());
 
         for (UUID nomenclatureKey : keysList) {
@@ -182,9 +189,11 @@ public class CostPriceServiceImpl implements CostPriceService {
                 }
             }
         }
+        log.info("Finish --------> CostPriceServiceImpl --------> updateMapForInvoiceStocks");
     }
 
     private void createMapForRemainigStocks(UUID organizationId) {
+        log.info("Start --------> CostPriceServiceImpl --------> createMapForRemainigStocks");
         RemainingStockResponseDto remainingStockResponseDto = getAllStocks(organizationId);
         List<RemainingItemStockResponseDto> entities = remainingStockResponseDto.getValue();
 
@@ -201,12 +210,9 @@ public class CostPriceServiceImpl implements CostPriceService {
     }
 
     private void createMapForInvoiceStocks() {
+        log.info("Start --------> CostPriceServiceImpl --------> createMapForInvoiceStocks");
         List<InvoiceStocksEntity> entities = invoiceStocksRepository.findAll();
         List<InvoiceEntity> invoiceEntities = invoiceRepository.findAll();
-
-        // Оптимизация: задаем правильную начальную емкость
-        // load factor = 0.75, поэтому размер = (количество / 0.75) + 1
-        int initialCapacity = (int) (entities.size() / 0.75) + 1;
 
         for (InvoiceEntity invoiceEntity : invoiceEntities) {
             for (InvoiceStocksEntity entity : entities) {
@@ -230,26 +236,19 @@ public class CostPriceServiceImpl implements CostPriceService {
         log.info("{}--{}", this.invoiceStocksMap.size(), this.invoiceStocksMap.hashCode());
     }
 
-    private Map<UUID, List<ExpendStocksEntity>> createMapForExpendStocks() {
-        List<ExpendStocksEntity> entities = expendStocksRepository.findAll();
+    private Map<UUID, List<ExpendStocksEntity>> createMapForExpendStocks(List<ExpendEntity> list) {
+        log.info("Start --------> CostPriceServiceImpl --------> createMapForExpendStocks");
 
-        // Оптимизация: задаем правильную начальную емкость
-        // load factor = 0.75, поэтому размер = (количество / 0.75) + 1
-        int initialCapacity = (int) (entities.size() / 0.75) + 1;
-        Map<UUID, List<ExpendStocksEntity>> dataMap = new HashMap<>(initialCapacity);
+        Map<UUID, List<ExpendStocksEntity>> dataMap = new HashMap<>();
 
-        for (ExpendStocksEntity entity : entities) {
+        for (ExpendEntity entity : list) {
             UUID id = entity.getRefKey();
 
-            // Если ключ уже существует, добавляем в существующий список
-            if (dataMap.containsKey(id)) {
-                dataMap.get(id).add(entity);
-            } else {
-                // Если ключ новый, создаем новый список и добавляем данные
-                List<ExpendStocksEntity> dataList = new ArrayList<>();
-                dataList.add(entity);
-                dataMap.put(id, dataList);
+            List<ExpendStocksEntity> expendStocksEntities = expendStocksRepository.findAllByRefKey(id);
+            if (expendStocksEntities == null) {
+                continue;
             }
+            dataMap.put(id, expendStocksEntities);
         }
 
         log.info("Finish -----> CostPriceServiceImpl ------> createMapForExpendStocks");
