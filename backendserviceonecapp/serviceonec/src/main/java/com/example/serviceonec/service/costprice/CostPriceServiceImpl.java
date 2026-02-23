@@ -65,9 +65,11 @@ public class CostPriceServiceImpl implements CostPriceService {
                 continue;
             }
 
-            log.info("expendList ---- {} ------->{}",
+            log.info("expendList ---- {} ------->{}--------->{}",
                     expendRefKey,
-                    expendStocksMap.size());
+                    expendStocksMap.size(),
+                    expendStocksMap.get(expendRefKey).size()
+            );
 
             for (ExpendStocksEntity expendStocksEntity : expendStocksMap.get(expendRefKey)) {
                 log.info("for -----> ExpendStocksEntity expendStocksEntity : expendStocksMap.get(expendRefKey)");
