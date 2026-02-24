@@ -74,7 +74,7 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
         String url = String.format(
                 "/Document_РасходнаяНакладная_Запасы?" +
                 "$filter=Ref_Key eq guid'%s'&" +
-                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
                 "$format=json", id);
 
         ExpendStocksResponseDto response;
@@ -115,7 +115,7 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
 //                "$filter=Date ge datetime'" + startStr + "' " +
 //                    "and Date le datetime'" + endStr + "'" +
 //                "&" +
-                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
                 "$top=%s&$skip=%s&" +
                 "$format=json", top, skip);
 

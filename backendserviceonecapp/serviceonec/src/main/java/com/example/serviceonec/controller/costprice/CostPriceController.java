@@ -42,11 +42,13 @@ public class CostPriceController {
         );
 
         invoiceService.getAllInvoice(
-                request.getOrganizationId()
+                request.getOrganizationId(),
+                request.getDateTo()
         );
 
         List<CostPriceControllerOutput> list = costPriceService.getAllCostPrice(
-                request.getOrganizationId()
+                request.getOrganizationId(),
+                request.getDateTo()
         );
 
         if (list.isEmpty()) {

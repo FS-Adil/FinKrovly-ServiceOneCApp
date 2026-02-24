@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +29,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     public Page<InvoiceEntity> getAllInvoice(
-            UUID organizationId
+            UUID organizationId,
+            LocalDateTime endDate
     ) {
         log.info("-------> InvoiceServiceImpl -------> getAllInvoice");
 
@@ -44,6 +46,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
             InvoiceResponseDto invoiceResponseDto = getInvoice(
                     organizationId,
+                    endDate,
                     top,
                     skip
             );
@@ -76,6 +79,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private InvoiceResponseDto getInvoice(
             UUID organizationId,
+            LocalDateTime endDate,
             Integer top,
             Integer skip
     ) {
@@ -84,7 +88,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 "$filter=Posted eq true" +
                 " and Организация_Key eq guid'" + organizationId + "'" +
 //                    "and Date ge datetime'" + startStr + "' " +
-//                    "and Date le datetime'" + endStr + "'" +
+                    "and Date le datetime'" + endDate + "'" +
                 "&" +
                 "$select= Number,Date,Ref_Key,Организация_Key,ВидОперации&" +
                 "$top=%s&$skip=%s&" +

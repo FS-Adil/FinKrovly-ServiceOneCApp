@@ -20,6 +20,9 @@ public class InvoiceStocksItemResponseDto {
     @JsonProperty("Характеристика_Key")
     private String characteristicKey;
 
+    @JsonProperty("Партия_Key")
+    private String batchKey;
+
     @JsonProperty("Количество")
     private BigDecimal quantity;
 
