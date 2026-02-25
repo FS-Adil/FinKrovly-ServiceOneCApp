@@ -42,7 +42,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
 
         while (isStop) {
 
-//            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
+            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
 
             InvoiceStocksResponseDto invoiceStocksResponseDto = getInvoiceStocks(top, skip);
 
@@ -71,7 +71,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
     public void getInvoiceStocksById(UUID uuid) {
         String url = String.format("Document_ПриходнаяНакладная_Запасы?" +
                 "$filter=Номенклатура_Key eq guid'%s'&" +
-                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
                 "$format=json", uuid);
 
 //        log.info("{}", url);
@@ -109,7 +109,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
 //                "$filter=Date ge datetime'" + startStr + "' " +
 //                    "and Date le datetime'" + endStr + "'" +
 //                "&" +
-                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
                 "$top=%s&$skip=%s&" +
                 "$format=json", top, skip);
 

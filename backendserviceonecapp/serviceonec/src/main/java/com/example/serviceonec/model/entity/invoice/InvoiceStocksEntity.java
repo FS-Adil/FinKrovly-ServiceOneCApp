@@ -28,6 +28,9 @@ public class InvoiceStocksEntity extends BaseEntity {
     @Column(name = "characteristic_key", nullable = false)
     private UUID characteristicKey;
 
+    @Column(name = "batch_key", nullable = false)
+    private UUID batchKey;
+
     @Column(name = "quantity", nullable = false)
     private BigDecimal quantity;
 

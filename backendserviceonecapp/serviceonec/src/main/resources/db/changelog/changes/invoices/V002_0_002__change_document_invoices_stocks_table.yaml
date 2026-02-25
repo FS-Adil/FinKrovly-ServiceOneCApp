@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: V002_0_002__change_document_invoices_stocks_table
+      author: adilhan
+      changes:
+        - addColumn:
+            tableName: invoice_stocks
+            columns:
+              - column:
+                  name: batch_key
+                  type: UUID
+                  defaultValue: "CAST('00000000-0000-0000-0000-000000000000' AS UUID)"
+                  constraints:
+                    nullable: false
