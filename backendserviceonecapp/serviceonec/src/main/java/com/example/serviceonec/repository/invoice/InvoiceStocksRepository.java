@@ -12,4 +12,7 @@ import java.util.UUID;
 public interface InvoiceStocksRepository extends JpaRepository<InvoiceStocksEntity, String> {
     List<InvoiceStocksEntity> findAllByNomenclatureKey(UUID key);
     List<InvoiceStocksEntity> findAllByRefKey(UUID refKey);
+
+    // И метод для загрузки по списку ключей:
+    List<InvoiceStocksEntity> findAllByRefKeyIn(List<UUID> refKeys);
 }

@@ -69,8 +69,8 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
 
     @Override
     public void getInvoiceStocksById(UUID uuid) {
-        String url = String.format("Document_ПриходнаяНакладная_Запасы?" +
-                "$filter=Номенклатура_Key eq guid'%s'&" +
+        String url = String.format("/Document_ПриходнаяНакладная_Запасы?" +
+                "$filter=Ref_Key eq guid'%s'&" +
                 "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
                 "$format=json", uuid);
 

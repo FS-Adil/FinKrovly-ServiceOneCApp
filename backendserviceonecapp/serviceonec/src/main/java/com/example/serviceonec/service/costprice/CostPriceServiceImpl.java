@@ -8,17 +8,24 @@ import com.example.serviceonec.model.dto.response.costprice.RemainingItemStockRe
 import com.example.serviceonec.model.dto.response.costprice.RemainingStockResponseDto;
 import com.example.serviceonec.model.dto.response.rolllist.RollListItemResponseDto;
 import com.example.serviceonec.model.dto.response.rolllist.RollListResponseDto;
+import com.example.serviceonec.model.entity.BaseEntity;
+import com.example.serviceonec.model.entity.BatchEntity;
+import com.example.serviceonec.model.entity.CharacteristicEntity;
 import com.example.serviceonec.model.entity.NomenclatureEntity;
 import com.example.serviceonec.model.entity.expend.ExpendEntity;
 import com.example.serviceonec.model.entity.expend.ExpendStocksEntity;
 import com.example.serviceonec.model.entity.inventory.InventoryEntity;
 import com.example.serviceonec.model.entity.invoice.InvoiceEntity;
 import com.example.serviceonec.model.entity.invoice.InvoiceStocksEntity;
+import com.example.serviceonec.repository.BatchRepository;
+import com.example.serviceonec.repository.CharacteristicRepository;
 import com.example.serviceonec.repository.NomenclatureRepository;
 import com.example.serviceonec.repository.expend.ExpendRepository;
 import com.example.serviceonec.repository.expend.ExpendStocksRepository;
 import com.example.serviceonec.repository.invoice.InvoiceRepository;
 import com.example.serviceonec.repository.invoice.InvoiceStocksRepository;
+import com.example.serviceonec.service.expend.ExpendStocksService;
+import com.example.serviceonec.service.invoice.InvoiceStocksService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,13 +33,14 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class CostPriceServiceImpl implements CostPriceService {
 
-    private final Map<UUID, Map<UUID, Map<UUID, List<InvoiceStocksEntity>>>> invoiceStocksMap = new HashMap<>();
+    private Map<UUID, Map<UUID, Map<UUID, List<InvoiceStocksEntity>>>> invoiceStocksMap = new HashMap<>();
     private final Map<UUID, Map<UUID, Map<UUID, RemainingItemStockResponseDto>>> remainigStocksMap = new HashMap<>();
 
     private final ExpendRepository expendRepository;
@@ -40,9 +48,14 @@ public class CostPriceServiceImpl implements CostPriceService {
     private final ExpendStocksRepository expendStocksRepository;
     private final InvoiceStocksRepository invoiceStocksRepository;
     private final NomenclatureRepository nomenclatureRepository;
+    private final CharacteristicRepository characteristicRepository;
+    private final BatchRepository batchRepository;
 
     private final OneCProperties oneCProperties;
     private final RestClientConfig restClientConfig;
+
+    private final ExpendStocksService expendStocksService;
+    private final InvoiceStocksService invoiceStocksService;
 
     @Override
     public List<CostPriceControllerOutput> getAllCostPrice(
@@ -59,44 +72,82 @@ public class CostPriceServiceImpl implements CostPriceService {
         updateMapForInvoiceStocks(); // this.invoiceStocksMap изменяем исходя из остатков на складе, то есть убираем из структуры количество, которое числится в остатке
 
         Map<UUID, String> nomenclatureMap = createMapForNomenclature();
+        Map<UUID, String> characteristicMap = createMapForCharacteristic();
+        Map<UUID, String> batchMap = createMapForBatch();
 
 
         for (ExpendEntity expend : expendList) {
-            log.info("for ---> ExpendEntity expend : expendList");
+//            log.info("for ---> ExpendEntity expend : expendList");
             UUID expendRefKey = expend.getRefKey();
 
             if (expendStocksMap.get(expendRefKey) == null) {
-                log.info("if (expendStocksMap.get(expendRefKey) == null) {");
+                log.info("Запасы расходников по данному ref_key {} нет", expendRefKey);
                 continue;
             }
 
-            log.info("expendList ---- {} ------->{}--------->{}",
-                    expendRefKey,
-                    expendStocksMap.size(),
-                    expendStocksMap.get(expendRefKey).size()
-            );
 
             for (ExpendStocksEntity expendStocksEntity : expendStocksMap.get(expendRefKey)) {
-                log.info("for -----> ExpendStocksEntity expendStocksEntity : expendStocksMap.get(expendRefKey)");
+//                log.info("for -----> ExpendStocksEntity expendStocksEntity : expendStocksMap.get(expendRefKey)");
                 UUID nomenclatureKey = expendStocksEntity.getNomenclatureKey();
                 UUID characteristicKey = expendStocksEntity.getCharacteristicKey();
                 UUID batchKey = expendStocksEntity.getBatchKey();
+
+                String number = expend.getNumber();
+                String refKey = expendRefKey.toString();
+                String name = nomenclatureMap.get(nomenclatureKey);
+                String characteristic = characteristicMap.get(characteristicKey);
+                String batch = batchMap.get(batchKey);
+                double price = expendStocksEntity.getPrice().doubleValue();
+                double quantity = expendStocksEntity.getQuantity().doubleValue();
+
                 if (!invoiceStocksMap.containsKey(nomenclatureKey)) {
-                    log.info("В приходниках такой номенклатуры нет --> {}", nomenclatureKey);
+//                    log.info("В приходниках такой номенклатуры нет --> {}", nomenclatureKey);
+                    list.add(
+                            CostPriceControllerOutput.builder()
+                                    .refKey(refKey)
+                                    .number(number)
+                                    .name(name)
+                                    .characteristic(characteristic)
+                                    .batch(batch)
+                                    .quantity(quantity)
+                                    .price(0.0)
+                                    .cost(0.0)
+                                    .build()
+                    );
                     continue;
                 }
                 if (!invoiceStocksMap.get(nomenclatureKey).containsKey(characteristicKey)) {
-                    log.info("В приходниках такой характеристики нет --> {}-->{}", nomenclatureKey, characteristicKey);
+//                    log.info("В приходниках такой характеристики нет --> {}-->{}", nomenclatureKey, characteristicKey);
+                    list.add(
+                            CostPriceControllerOutput.builder()
+                                    .refKey(refKey)
+                                    .number(number)
+                                    .name(name)
+                                    .characteristic(characteristic)
+                                    .batch(batch)
+                                    .quantity(quantity)
+                                    .price(0.0)
+                                    .cost(0.0)
+                                    .build()
+                    );
                     continue;
                 }
                 if (!invoiceStocksMap.get(nomenclatureKey).get(characteristicKey).containsKey(batchKey)) {
-                    log.info("В приходниках такой партии нет --> {}-->{}-->{}", nomenclatureKey, characteristicKey, batchKey);
+//                    log.info("В приходниках такой партии нет --> {}-->{}-->{}", nomenclatureKey, characteristicKey, batchKey);
+                    list.add(
+                            CostPriceControllerOutput.builder()
+                                    .refKey(refKey)
+                                    .number(number)
+                                    .name(name)
+                                    .characteristic(characteristic)
+                                    .batch(batch)
+                                    .quantity(quantity)
+                                    .price(0.0)
+                                    .cost(0.0)
+                                    .build()
+                    );
                     continue;
                 }
-
-                String name = nomenclatureMap.get(nomenclatureKey);
-                double price = expendStocksEntity.getPrice().doubleValue();
-                double quantity = expendStocksEntity.getQuantity().doubleValue();
 
                 double cost = getCostForNomenclature(
                         nomenclatureKey,
@@ -105,13 +156,29 @@ public class CostPriceServiceImpl implements CostPriceService {
                         quantity
                 );
                 if (cost == 0.0) {
-                    log.info("В приходнике количество меньше чем в расходнике - {}", nomenclatureKey);
+//                    log.info("В приходнике количество меньше чем в расходнике - {}", nomenclatureKey);
+                    list.add(
+                            CostPriceControllerOutput.builder()
+                                    .refKey(refKey)
+                                    .number(number)
+                                    .name(name)
+                                    .characteristic(characteristic)
+                                    .batch(batch)
+                                    .quantity(quantity)
+                                    .price(price)
+                                    .cost(0.0)
+                                    .build()
+                    );
                     continue;
                 }
 //                log.info("{}-{}-{}-{}", name, price, quantity, cost);
                 list.add(
                         CostPriceControllerOutput.builder()
+                                .refKey(refKey)
+                                .number(number)
                                 .name(name)
+                                .characteristic(characteristic)
+                                .batch(batch)
                                 .quantity(quantity)
                                 .price(price)
                                 .cost(cost)
@@ -122,7 +189,7 @@ public class CostPriceServiceImpl implements CostPriceService {
             }
         }
         log.info("Finish--------> CostPriceServiceImpl --------> getAllCostPrice");
-        return list;
+        return aggregateOnlyFast(list);
     }
 
     private double getCostForNomenclature(
@@ -131,7 +198,7 @@ public class CostPriceServiceImpl implements CostPriceService {
             UUID batchKey,
             double quantity
     ) {
-        log.info("Start--------> CostPriceServiceImpl --------> getCostForNomenclature");
+//        log.info("Start--------> CostPriceServiceImpl --------> getCostForNomenclature");
 
         List<InvoiceStocksEntity> invoiceStocksList = this.invoiceStocksMap
                 .get(nomenclatureKey)
@@ -144,20 +211,20 @@ public class CostPriceServiceImpl implements CostPriceService {
             double invoiceQuantity = entity.getQuantity().doubleValue();
 
             if ( invoiceQuantity >= quantity) {
-                log.info("до ------>{}------>{}", invoiceStocksList.get(i).getQuantity(), nomenclatureKey);
+//                log.info("до ------>{}------>{}", invoiceStocksList.get(i).getQuantity(), nomenclatureKey);
                 entity.setQuantity(new BigDecimal(invoiceQuantity - quantity));
                 invoiceStocksList.set(i, entity);
-                log.info("после ------>{}------->{}", invoiceStocksList.get(i).getQuantity(), nomenclatureKey);
+//                log.info("после ------>{}------->{}", invoiceStocksList.get(i).getQuantity(), nomenclatureKey);
                 this.invoiceStocksMap
                         .get(nomenclatureKey)
                         .get(characteristicKey)
                         .replace(batchKey, invoiceStocksList);
 
-                log.info("Finish--------> CostPriceServiceImpl --------> getCostForNomenclature");
+//                log.info("Finish--------> CostPriceServiceImpl --------> getCostForNomenclature");
                 return entity.getPrice().doubleValue();
             }
         }
-        log.info("Вход в метод getCostForNomenclature с данным количеством ------>{}------>{}", quantity, nomenclatureKey);
+//        log.info("Вход в метод getCostForNomenclature с данным количеством ------>{}------>{}", quantity, nomenclatureKey);
         return 0.0;
     }
 
@@ -189,35 +256,71 @@ public class CostPriceServiceImpl implements CostPriceService {
         return dataMap;
     }
 
+    private Map<UUID, String> createMapForCharacteristic() {
+        log.info("Start --------> CostPriceServiceImpl --------> createMapForCharacteristic");
+        List<CharacteristicEntity> entities = characteristicRepository.findAll();
+
+        // Оптимизация: задаем правильную начальную емкость
+        // load factor = 0.75, поэтому размер = (количество / 0.75) + 1
+        int initialCapacity = (int) (entities.size() / 0.75) + 1;
+        Map<UUID, String> dataMap = new HashMap<>(initialCapacity);
+
+        for (CharacteristicEntity entity : entities) {
+            dataMap.put(entity.getRefKey(), entity.getDescription());
+        }
+
+        log.info("Finish -----> CostPriceServiceImpl ------> createMapForCharacteristic");
+        log.info("{}--{}", dataMap.size(), dataMap.hashCode());
+        return dataMap;
+    }
+
+    private Map<UUID, String> createMapForBatch() {
+        log.info("Start --------> CostPriceServiceImpl --------> createMapForBatch");
+        List<BatchEntity> entities = batchRepository.findAll();
+
+        // Оптимизация: задаем правильную начальную емкость
+        // load factor = 0.75, поэтому размер = (количество / 0.75) + 1
+        int initialCapacity = (int) (entities.size() / 0.75) + 1;
+        Map<UUID, String> dataMap = new HashMap<>(initialCapacity);
+
+        for (BatchEntity entity : entities) {
+            dataMap.put(entity.getRefKey(), entity.getDescription());
+        }
+
+        log.info("Finish -----> CostPriceServiceImpl ------> createMapForBatch");
+        log.info("{}--{}", dataMap.size(), dataMap.hashCode());
+        return dataMap;
+    }
+
     private void updateMapForInvoiceStocks() {
         log.info("Start --------> CostPriceServiceImpl --------> updateMapForInvoiceStocks");
         List<UUID> keysListNom = new ArrayList<>(this.invoiceStocksMap.keySet());
 
         for (UUID nomenclatureKey : keysListNom) {
             if (!this.remainigStocksMap.containsKey(nomenclatureKey)) {
-                log.info("if (this.remainigStocksMap.containsKey(nomenclatureKey)) {");
+//                log.info("На складах организации такой {} номенклатуры нет", nomenclatureKey);
                 continue;
             }
 
-            log.info("for (UUID nomenclatureKey : keysListNom) {");
+//            log.info("for (UUID nomenclatureKey : keysListNom) {");
             List<UUID> keysListChar = new ArrayList<>(this.invoiceStocksMap.get(nomenclatureKey).keySet());
 
             for (UUID characteristicKey : keysListChar) {
                 if (!this.remainigStocksMap.get(nomenclatureKey).containsKey(characteristicKey)) {
-                    log.info("if (this.remainigStocksMap.get(nomenclatureKey).containsKey(characteristicKey)) {");
+//                    log.info("На складах организации номенклатуры {} с такой {} характеристикой нет", nomenclatureKey, characteristicKey);
                     continue;
                 }
 
-                log.info("for (UUID characteristicKey : keysListChar) {");
+//                log.info("for (UUID characteristicKey : keysListChar) {");
                 List<UUID> keysListB = new ArrayList<>(this.invoiceStocksMap.get(nomenclatureKey).get(characteristicKey).keySet());
 
                 for (UUID batchKey : keysListB) {
                     if (!this.remainigStocksMap.get(nomenclatureKey).get(characteristicKey).containsKey(batchKey)) {
-                        log.info("if (this.remainigStocksMap.get(nomenclatureKey).get(characteristicKey).containsKey(batchKey)) {");
+//                        log.info("На складах организации такой номенклатуры {} с такой характеристикой {} с такой партией {} нет", nomenclatureKey, characteristicKey, batchKey);
                         continue;
                     }
 
-                    log.info("for (UUID batchKey : keysListB) {");
+//                    log.info("for (UUID batchKey : keysListB) {");
                     List<InvoiceStocksEntity> invoiceStocksList = this.invoiceStocksMap
                             .get(nomenclatureKey)
                             .get(characteristicKey)
@@ -236,7 +339,7 @@ public class CostPriceServiceImpl implements CostPriceService {
 
                         // Если количество в приходниках меньше, чем в остатках
                         if (invoiceQuantity <= remainingStockQuantity) {
-                            log.info("{} до ---> {}-{}-{}", i, entity.getQuantity().doubleValue(), remainingStockQuantity, nomenclatureKey);
+//                            log.info("{} до ---> {}-{}-{}", i, entity.getQuantity().doubleValue(), remainingStockQuantity, nomenclatureKey);
                             // Изменяем количество в приходниках на 0.0
                             entity.setQuantity(new BigDecimal(0.0));
                             invoiceStocksList.set(i, entity);
@@ -245,9 +348,9 @@ public class CostPriceServiceImpl implements CostPriceService {
                             remainingStockQuantity = remainingStockQuantity - invoiceQuantity;
                             remainingItemStockResponseDto.setQuantityBalance(remainingStockQuantity);
                             this.remainigStocksMap.get(nomenclatureKey).get(characteristicKey).replace(batchKey, remainingItemStockResponseDto);
-                            log.info("{} после ---> {}-{}-{}", i, entity.getQuantity().doubleValue(), remainingStockQuantity, nomenclatureKey);
+//                            log.info("{} после ---> {}-{}-{}", i, entity.getQuantity().doubleValue(), remainingStockQuantity, nomenclatureKey);
                         } else {
-                            log.info("{} до ---> {}-{}-{}", i, entity.getQuantity().doubleValue(), remainingStockQuantity, nomenclatureKey);
+//                            log.info("{} до ---> {}-{}-{}", i, entity.getQuantity().doubleValue(), remainingStockQuantity, nomenclatureKey);
                             // Уменьшаем количество в приходниках на количества в остатках
                             entity.setQuantity(new BigDecimal(invoiceQuantity - remainingStockQuantity));
                             invoiceStocksList.set(i, entity);
@@ -256,7 +359,7 @@ public class CostPriceServiceImpl implements CostPriceService {
                             remainingStockQuantity = 0.0;
                             remainingItemStockResponseDto.setQuantityBalance(remainingStockQuantity);
                             this.remainigStocksMap.get(nomenclatureKey).get(characteristicKey).replace(batchKey, remainingItemStockResponseDto);
-                            log.info("{} после ---> {}-{}-{}", i, entity.getQuantity().doubleValue(), remainingStockQuantity, nomenclatureKey);
+//                            log.info("{} после ---> {}-{}-{}", i, entity.getQuantity().doubleValue(), remainingStockQuantity, nomenclatureKey);
                             break;
                         }
                     }
@@ -268,6 +371,8 @@ public class CostPriceServiceImpl implements CostPriceService {
 
     private void createMapForRemainigStocks(UUID organizationId, LocalDateTime endDate) {
         log.info("Start --------> CostPriceServiceImpl --------> createMapForRemainigStocks");
+        this.remainigStocksMap.clear();
+
         RemainingStockResponseDto remainingStockResponseDto = getAllStocks(organizationId, endDate);
         List<RemainingItemStockResponseDto> entities = remainingStockResponseDto.getValue();
 
@@ -290,53 +395,47 @@ public class CostPriceServiceImpl implements CostPriceService {
 
     private void createMapForInvoiceStocks() {
         log.info("Start --------> CostPriceServiceImpl --------> createMapForInvoiceStocks");
-        List<InvoiceEntity> invoiceEntities = invoiceRepository.findAll();
+        // Очищаем существующую мапу
+        this.invoiceStocksMap.clear();
 
-        for (InvoiceEntity invoiceEntity : invoiceEntities) {
-            List<InvoiceStocksEntity> entities = invoiceStocksRepository.findAllByRefKey(invoiceEntity.getRefKey());
-            for (InvoiceStocksEntity entity : entities) {
+        // 1. Получаем все RefKey одним запросом
+//        List<UUID> refKeys = invoiceRepository.findAllRefKeys();
+//        if (refKeys.isEmpty()) {
+//            log.info("No invoices found");
+//            return;
+//        }
+        // Получаем только refKey для документов с operationType = "ПоступлениеОтПоставщика"
+        String operationType = "ПоступлениеОтПоставщика"; // или используйте enum
+        List<UUID> refKeys = invoiceRepository.findAllRefKeysByOperationType(operationType);
 
-
-                UUID id_nom = entity.getNomenclatureKey();
-                UUID id_char = entity.getCharacteristicKey();
-                UUID id_b = entity.getBatchKey();
-
-                // Если ключ уже существует, добавляем в существующий список
-                if (this.invoiceStocksMap.containsKey(id_nom)) {
-                    if(this.invoiceStocksMap.get(id_nom).containsKey(id_char)){
-                        if (this.invoiceStocksMap.get(id_nom).get(id_char).containsKey(id_b)) {
-                            this.invoiceStocksMap.get(id_nom).get(id_char).get(id_b).add(entity);
-                        }
-                        else {
-                            // Если ключ новый, создаем новый список и добавляем данные
-                            List<InvoiceStocksEntity> dataList = new ArrayList<>();
-                            dataList.add(entity);
-
-                            this.invoiceStocksMap.get(id_nom).get(id_char).put(id_b, dataList);
-                        }
-                    } else {
-                        List<InvoiceStocksEntity> dataList = new ArrayList<>();
-                        dataList.add(entity);
-                        Map<UUID, List<InvoiceStocksEntity>> mapLevel1 = new HashMap<>();
-                        mapLevel1.put(id_b, dataList);
-
-                        this.invoiceStocksMap.get(id_nom).put(id_char, mapLevel1);
-                    }
-                } else {
-                    List<InvoiceStocksEntity> dataList = new ArrayList<>();
-                    dataList.add(entity);
-                    Map<UUID, List<InvoiceStocksEntity>> mapLevel1 = new HashMap<>();
-                    mapLevel1.put(id_b, dataList);
-                    Map<UUID, Map<UUID, List<InvoiceStocksEntity>>> mapLevel2 = new HashMap<>();
-                    mapLevel2.put(id_char, mapLevel1);
-
-                    this.invoiceStocksMap.put(id_nom, mapLevel2);
-                }
-            }
+        if (refKeys.isEmpty()) {
+            log.info("No invoices found with operation type: {}", operationType);
+            return;
         }
 
+        // 2. Загружаем все InvoiceStocks одним запросом
+        List<InvoiceStocksEntity> allStocks = invoiceStocksRepository.findAllByRefKeyIn(refKeys);
+        if (allStocks.isEmpty()) {
+            log.info("No invoice stocks found for the filtered invoices");
+            return;
+        }
+
+        // 3. Используем Java 8+ Stream API для эффективной группировки
+        this.invoiceStocksMap = allStocks.stream()
+                .collect(Collectors.groupingBy(
+                        InvoiceStocksEntity::getNomenclatureKey,
+                        Collectors.groupingBy(
+                                InvoiceStocksEntity::getCharacteristicKey,
+                                Collectors.groupingBy(
+                                        InvoiceStocksEntity::getBatchKey,
+                                        Collectors.toList()
+                                )
+                        )
+                ));
+
         log.info("Finish -----> CostPriceServiceImpl ------> createMapForInvoiceStocks");
-        log.info("{}--{}", this.invoiceStocksMap.size(), this.invoiceStocksMap.hashCode());
+        log.info("Found {} invoice stocks for {} invoices with operation type: {}",
+                allStocks.size(), refKeys.size(), operationType);
     }
 
     private Map<UUID, List<ExpendStocksEntity>> createMapForExpendStocks(List<ExpendEntity> list) {
@@ -349,19 +448,24 @@ public class CostPriceServiceImpl implements CostPriceService {
 
             List<ExpendStocksEntity> expendStocksEntities = expendStocksRepository.findAllByRefKey(id);
             if (expendStocksEntities.isEmpty()) {
-                log.info("if (expendStocksEntities.isEmpty()) {");
+                try {
+                    expendStocksService.findExpendStocksById(id);
+                    expendStocksEntities = expendStocksRepository.findAllByRefKey(id);
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                }
+            }
+
+            if (expendStocksEntities.isEmpty()) {
                 continue;
             }
+
             dataMap.put(id, expendStocksEntities);
         }
 
         log.info("Finish -----> CostPriceServiceImpl ------> createMapForExpendStocks");
         log.info("{}--{}", dataMap.size(), dataMap.hashCode());
         return dataMap;
-    }
-
-    private boolean getTrueFalseForBatch(UUID batchKey) {
-        return batchKey.compareTo(UUID.fromString("00000000-0000-0000-0000-000000000000")) != 0;
     }
 
     private RemainingStockResponseDto getAllStocks(
@@ -397,5 +501,51 @@ public class CostPriceServiceImpl implements CostPriceService {
         log.info("------> Конец метода по поиску в 1с всех остатков по организации {}", guid);
 
         return response;
+    }
+
+    // Более быстрая версия с строковым ключом
+    private List<CostPriceControllerOutput> aggregateOnlyFast(List<CostPriceControllerOutput> products) {
+        log.info("Start ------> CostPriceServiceImpl -------> aggregateOnlyFast");
+        if (products == null || products.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Map<String, CostPriceControllerOutput> map = new HashMap<>(products.size());
+
+        for (CostPriceControllerOutput p : products) {
+            // Создаем уникальный ключ из имени и себестоимости
+            String key = p.getName() + "|" + p.getCharacteristic() + "|" + p.getBatch() + "|" + p.getCost();
+
+            CostPriceControllerOutput existing = map.get(key);
+            if (existing == null) {
+                // Создаем новый продукт
+                // Создаем новый продукт с дефолтным значением для name, если оно null
+                String productName = p.getName() != null ? p.getName() : "Без имени"; // или "Без имени"
+                String productCharacteristic = p.getCharacteristic() != null ? p.getCharacteristic() : "Без характеритики";
+                String productBatch = p.getBatch() != null ? p.getBatch() : "Без партии";
+                map.put(key,
+                        CostPriceControllerOutput.builder()
+                                .refKey(p.getRefKey())
+                                .number(p.getNumber())
+                                .name(productName)
+                                .characteristic(productCharacteristic)
+                                .batch(productBatch)
+                                .quantity(p.getQuantity())
+                                .price(p.getPrice())
+                                .cost(p.getCost())
+                                .build()
+                );
+            } else {
+                // Суммируем количество
+                existing.setQuantity(existing.getQuantity() + p.getQuantity());
+            }
+        }
+
+        // Получаем список результатов и сортируем по возрастанию наименования
+        List<CostPriceControllerOutput> result = new ArrayList<>(map.values());
+        result.sort(Comparator.comparing(CostPriceControllerOutput::getName));
+
+        log.info("Finish ------> CostPriceServiceImpl -------> aggregateOnlyFast. Sorted by quantity desc");
+        return result;
     }
 }
