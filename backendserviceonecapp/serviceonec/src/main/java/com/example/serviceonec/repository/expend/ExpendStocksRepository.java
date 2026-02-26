@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface ExpendStocksRepository extends JpaRepository<ExpendStocksEntity, String> {
     List<ExpendStocksEntity> findAllByRefKey(UUID refKey);
+    List<ExpendStocksEntity> findAllByRefKeyIn(List<UUID> refKeys);
 }

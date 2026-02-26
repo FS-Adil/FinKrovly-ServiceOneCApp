@@ -15,9 +15,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -65,6 +65,94 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
         log.info("------> Все ЗАПАСЫ из расходников в 1с найдены и сохранены в базу");
 
         return expendStocksRepository.findAll(PageRequest.of(0, 10));
+    }
+
+    @Override
+    public Map<UUID, List<ExpendStocksEntity>> findExpendStocksByIds(List<UUID> ids) {
+        log.info("------> Старт метода по поиску в 1с ЗАПАСОВ из расходников по списку id");
+
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, List<ExpendStocksEntity>> resultMap = new ConcurrentHashMap<>();
+        List<ExpendStocksEntity> allEntitiesToSave = Collections.synchronizedList(new ArrayList<>());
+
+        // Создаем пул потоков для параллельных запросов
+        ExecutorService executor = Executors.newFixedThreadPool(5); // 5 параллельных запросов
+
+        List<CompletableFuture<Void>> futures = ids.stream()
+                .map(id -> CompletableFuture.runAsync(() ->
+                        fetchAndProcessId(id, resultMap, allEntitiesToSave), executor))
+                .collect(Collectors.toList());
+
+        // Ждем завершения всех запросов
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        executor.shutdown();
+
+        // Пакетное сохранение всех найденных записей
+        if (!allEntitiesToSave.isEmpty()) {
+            try {
+                expendStocksRepository.saveAll(allEntitiesToSave);
+                log.info("Сохранено {} записей запасов в БД", allEntitiesToSave.size());
+            } catch (Exception e) {
+                log.error("Ошибка при пакетном сохранении запасов в БД", e);
+                saveEntitiesIndividually(allEntitiesToSave);
+            }
+        }
+
+        log.info("Найдено запасов для {} расходников из {} запрошенных",
+                resultMap.size(), ids.size());
+        log.info("------> Конец метода по поиску в 1с всех ЗАПАСОВ из расходников по списку id");
+
+        return resultMap;
+    }
+
+    private void fetchAndProcessId(UUID id, Map<UUID, List<ExpendStocksEntity>> resultMap,
+                                   List<ExpendStocksEntity> allEntitiesToSave) {
+        try {
+            String url = String.format(
+                    "/Document_РасходнаяНакладная_Запасы?" +
+                            "$filter=Ref_Key eq guid'%s'&" +
+                            "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                            "$format=json", id);
+
+            ExpendStocksResponseDto response = restClientConfig.restClient().get()
+                    .uri(url)
+                    .retrieve()
+                    .body(ExpendStocksResponseDto.class);
+
+            if (response != null && response.getValue() != null && !response.getValue().isEmpty()) {
+                List<ExpendStocksEntity> entities = response.getValue().stream()
+                        .map(expendStocksMapper::toEntity)
+                        .collect(Collectors.toList());
+
+                allEntitiesToSave.addAll(entities);
+                resultMap.put(id, entities);
+            } else {
+                log.warn("По id {} запасов из Расходников нет", id);
+            }
+        } catch (Exception e) {
+            log.error("Ошибка при получении ЗАПАСОВ для id: {}", id, e);
+        }
+    }
+
+    /**
+     * Резервный метод для сохранения записей по одной в случае ошибки пакетного сохранения
+     */
+    private void saveEntitiesIndividually(List<ExpendStocksEntity> entities) {
+        log.info("Пробуем сохранить записи по одной");
+        int successCount = 0;
+        for (ExpendStocksEntity entity : entities) {
+            try {
+                expendStocksRepository.save(entity);
+                successCount++;
+            } catch (Exception e) {
+                log.error("Ошибка при сохранении записи: {}", entity, e);
+            }
+        }
+        log.info("Сохранено {} из {} записей по одной", successCount, entities.size());
     }
 
     @Override

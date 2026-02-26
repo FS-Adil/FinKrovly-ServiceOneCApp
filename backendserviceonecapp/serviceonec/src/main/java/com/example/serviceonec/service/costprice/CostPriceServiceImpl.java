@@ -441,32 +441,85 @@ public class CostPriceServiceImpl implements CostPriceService {
     private Map<UUID, List<ExpendStocksEntity>> createMapForExpendStocks(List<ExpendEntity> list) {
         log.info("Start --------> CostPriceServiceImpl --------> createMapForExpendStocks");
 
-        Map<UUID, List<ExpendStocksEntity>> dataMap = new HashMap<>();
+        if (list == null || list.isEmpty()) {
+            return Collections.emptyMap();
+        }
 
-        for (ExpendEntity entity : list) {
-            UUID id = entity.getRefKey();
+        // Собираем все refKey для одного запроса
+        List<UUID> refKeys = list.stream()
+                .map(ExpendEntity::getRefKey)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
 
-            List<ExpendStocksEntity> expendStocksEntities = expendStocksRepository.findAllByRefKey(id);
-            if (expendStocksEntities.isEmpty()) {
-                try {
-                    expendStocksService.findExpendStocksById(id);
-                    expendStocksEntities = expendStocksRepository.findAllByRefKey(id);
-                } catch (Exception e) {
-                    log.info(e.getMessage());
+        // Получаем все записи одним запросом
+        List<ExpendStocksEntity> allExpendStocks = expendStocksRepository.findAllByRefKeyIn(refKeys);
+
+        // Группируем по refKey
+        Map<UUID, List<ExpendStocksEntity>> dataMap = allExpendStocks.stream()
+                .collect(Collectors.groupingBy(ExpendStocksEntity::getRefKey));
+
+        // Проверяем, для каких refKeys нет записей
+        List<UUID> missingRefKeys = refKeys.stream()
+                .filter(key -> !dataMap.containsKey(key))
+                .collect(Collectors.toList());
+
+        if (!missingRefKeys.isEmpty()) {
+            // Единоразово пытаемся загрузить недостающие записи
+            try {
+                Map<UUID, List<ExpendStocksEntity>> foundMissing = expendStocksService
+                        .findExpendStocksByIds(missingRefKeys);
+
+                if (foundMissing != null && !foundMissing.isEmpty()) {
+                    // Объединяем с существующей мапой
+                    foundMissing.forEach((key, value) ->
+                            dataMap.merge(key, value, (v1, v2) -> {
+                                List<ExpendStocksEntity> merged = new ArrayList<>(v1);
+                                merged.addAll(v2);
+                                return merged;
+                            })
+                    );
                 }
+            } catch (Exception e) {
+                log.error("Error loading missing expend stocks: {}", e.getMessage(), e);
             }
-
-            if (expendStocksEntities.isEmpty()) {
-                continue;
-            }
-
-            dataMap.put(id, expendStocksEntities);
         }
 
         log.info("Finish -----> CostPriceServiceImpl ------> createMapForExpendStocks");
-        log.info("{}--{}", dataMap.size(), dataMap.hashCode());
+        log.info("Map size: {}, keys: {}", dataMap.size(), dataMap.keySet());
+
         return dataMap;
     }
+
+//    private Map<UUID, List<ExpendStocksEntity>> createMapForExpendStocks(List<ExpendEntity> list) {
+//        log.info("Start --------> CostPriceServiceImpl --------> createMapForExpendStocks");
+//
+//        Map<UUID, List<ExpendStocksEntity>> dataMap = new HashMap<>();
+//
+//        for (ExpendEntity entity : list) {
+//            UUID id = entity.getRefKey();
+//
+//            List<ExpendStocksEntity> expendStocksEntities = expendStocksRepository.findAllByRefKey(id);
+//            if (expendStocksEntities.isEmpty()) {
+//                try {
+//                    expendStocksService.findExpendStocksById(id);
+//                    expendStocksEntities = expendStocksRepository.findAllByRefKey(id);
+//                } catch (Exception e) {
+//                    log.info(e.getMessage());
+//                }
+//            }
+//
+//            if (expendStocksEntities.isEmpty()) {
+//                continue;
+//            }
+//
+//            dataMap.put(id, expendStocksEntities);
+//        }
+//
+//        log.info("Finish -----> CostPriceServiceImpl ------> createMapForExpendStocks");
+//        log.info("{}--{}", dataMap.size(), dataMap.hashCode());
+//        return dataMap;
+//    }
 
     private RemainingStockResponseDto getAllStocks(
             UUID guid,
