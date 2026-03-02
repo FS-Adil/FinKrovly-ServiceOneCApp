@@ -29,7 +29,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
 
     private static final int BATCH_SIZE = 500;
     private static final int REQUEST_DELAY_MS = 20;
-    private static final int MAX_CONCURRENT_REQUESTS = 10;
+    private static final int MAX_CONCURRENT_REQUESTS = 5;
 
     @Override
     public Page<InvoiceStocksEntity> getAllInvoiceStocks() {
@@ -179,9 +179,8 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
         long startTime = System.currentTimeMillis();
 
         // Создаем пул потоков
-        int threadPoolSize = Math.min(MAX_CONCURRENT_REQUESTS, ids.size());
-        ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
-        log.info("Создан пул потоков на {} потоков для обработки {} ID", threadPoolSize, ids.size());
+        ExecutorService executor = Executors.newFixedThreadPool(MAX_CONCURRENT_REQUESTS);
+        log.info("Создан пул потоков на {} потоков для обработки {} ID", MAX_CONCURRENT_REQUESTS, ids.size());
 
         try {
             // Создаем список задач
@@ -269,6 +268,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
     }
 
     private List<InvoiceStocksEntity> fetchStocksForId(UUID id) {
+        log.info("======== ПОИСК ЗАПАСОВ ПО ID {} ПРИХОДНОГО НАКЛАДНОГО ========", id);
         String url = String.format(
                 "/Document_ПриходнаяНакладная_Запасы?" +
                         "$filter=Ref_Key eq guid'%s'&" +

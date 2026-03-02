@@ -3,6 +3,7 @@ package com.example.serviceonec.model.dto.response.costprice;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
@@ -17,8 +18,8 @@ public class RemainingItemStockResponseDto {
     private UUID batchKey;
 
     @JsonProperty("КоличествоBalance")
-    private Double quantityBalance;
+    private BigDecimal quantityBalance;
 
     @JsonProperty("СуммаBalance")
-    private Double amountBalance;
+    private BigDecimal amountBalance;
 }
