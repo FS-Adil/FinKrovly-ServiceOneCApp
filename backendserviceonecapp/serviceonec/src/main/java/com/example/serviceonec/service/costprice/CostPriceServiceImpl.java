@@ -97,8 +97,8 @@ public class CostPriceServiceImpl implements CostPriceService {
                 String name = nomenclatureMap.get(nomenclatureKey);
                 String characteristic = characteristicMap.get(characteristicKey);
                 String batch = batchMap.get(batchKey);
-                double price = expendStocksEntity.getPrice().doubleValue();
-                double quantity = expendStocksEntity.getQuantity().doubleValue();
+                BigDecimal price = expendStocksEntity.getPrice();
+                BigDecimal quantity = expendStocksEntity.getQuantity();
 
                 if (!invoiceStocksMap.containsKey(nomenclatureKey)) {
 //                    log.info("В приходниках такой номенклатуры нет --> {}", nomenclatureKey);
@@ -110,8 +110,8 @@ public class CostPriceServiceImpl implements CostPriceService {
                                     .characteristic(characteristic)
                                     .batch(batch)
                                     .quantity(quantity)
-                                    .price(0.0)
-                                    .cost(0.0)
+                                    .price(BigDecimal.valueOf(0.0))
+                                    .cost(BigDecimal.valueOf(0.0))
                                     .build()
                     );
                     continue;
@@ -126,8 +126,8 @@ public class CostPriceServiceImpl implements CostPriceService {
                                     .characteristic(characteristic)
                                     .batch(batch)
                                     .quantity(quantity)
-                                    .price(0.0)
-                                    .cost(0.0)
+                                    .price(BigDecimal.valueOf(0.0))
+                                    .cost(BigDecimal.valueOf(0.0))
                                     .build()
                     );
                     continue;
@@ -142,20 +142,20 @@ public class CostPriceServiceImpl implements CostPriceService {
                                     .characteristic(characteristic)
                                     .batch(batch)
                                     .quantity(quantity)
-                                    .price(0.0)
-                                    .cost(0.0)
+                                    .price(BigDecimal.valueOf(0.0))
+                                    .cost(BigDecimal.valueOf(0.0))
                                     .build()
                     );
                     continue;
                 }
 
-                double cost = getCostForNomenclature(
+                BigDecimal cost = getCostForNomenclature(
                         nomenclatureKey,
                         characteristicKey,
                         batchKey,
                         quantity
                 );
-                if (cost == 0.0) {
+                if (cost.compareTo(BigDecimal.valueOf(0.0)) == 0) {
 //                    log.info("В приходнике количество меньше чем в расходнике - {}", nomenclatureKey);
                     list.add(
                             CostPriceControllerOutput.builder()
@@ -166,7 +166,7 @@ public class CostPriceServiceImpl implements CostPriceService {
                                     .batch(batch)
                                     .quantity(quantity)
                                     .price(price)
-                                    .cost(0.0)
+                                    .cost(BigDecimal.valueOf(0.0))
                                     .build()
                     );
                     continue;
@@ -192,11 +192,11 @@ public class CostPriceServiceImpl implements CostPriceService {
         return aggregateOnlyFast(list);
     }
 
-    private double getCostForNomenclature(
+    private BigDecimal getCostForNomenclature(
             UUID nomenclatureKey,
             UUID characteristicKey,
             UUID batchKey,
-            double quantity
+            BigDecimal quantity
     ) {
 //        log.info("Start--------> CostPriceServiceImpl --------> getCostForNomenclature");
 
@@ -208,11 +208,11 @@ public class CostPriceServiceImpl implements CostPriceService {
         for (int i = 0; i < invoiceStocksList.size(); i++) {
             InvoiceStocksEntity entity = invoiceStocksList.get(i);
 
-            double invoiceQuantity = entity.getQuantity().doubleValue();
+            BigDecimal invoiceQuantity = entity.getQuantity();
 
-            if ( invoiceQuantity >= quantity) {
+            if ( invoiceQuantity.compareTo(quantity) >= 0) {
 //                log.info("до ------>{}------>{}", invoiceStocksList.get(i).getQuantity(), nomenclatureKey);
-                entity.setQuantity(new BigDecimal(invoiceQuantity - quantity));
+                entity.setQuantity(invoiceQuantity.subtract(quantity));
                 invoiceStocksList.set(i, entity);
 //                log.info("после ------>{}------->{}", invoiceStocksList.get(i).getQuantity(), nomenclatureKey);
                 this.invoiceStocksMap
@@ -221,11 +221,12 @@ public class CostPriceServiceImpl implements CostPriceService {
                         .replace(batchKey, invoiceStocksList);
 
 //                log.info("Finish--------> CostPriceServiceImpl --------> getCostForNomenclature");
-                return entity.getPrice().doubleValue();
+                return entity.getPrice();
+            } else {
+                log.info("Вход в метод getCostForNomenclature с данным количеством ------>{}---->{}---->{}", quantity, invoiceQuantity, nomenclatureKey);
             }
         }
-//        log.info("Вход в метод getCostForNomenclature с данным количеством ------>{}------>{}", quantity, nomenclatureKey);
-        return 0.0;
+        return BigDecimal.valueOf(0.0);
     }
 
     private List<ExpendEntity> findAllExpend() {
@@ -486,40 +487,8 @@ public class CostPriceServiceImpl implements CostPriceService {
         }
 
         log.info("Finish -----> CostPriceServiceImpl ------> createMapForExpendStocks");
-        log.info("Map size: {}, keys: {}", dataMap.size(), dataMap.keySet());
-
         return dataMap;
     }
-
-//    private Map<UUID, List<ExpendStocksEntity>> createMapForExpendStocks(List<ExpendEntity> list) {
-//        log.info("Start --------> CostPriceServiceImpl --------> createMapForExpendStocks");
-//
-//        Map<UUID, List<ExpendStocksEntity>> dataMap = new HashMap<>();
-//
-//        for (ExpendEntity entity : list) {
-//            UUID id = entity.getRefKey();
-//
-//            List<ExpendStocksEntity> expendStocksEntities = expendStocksRepository.findAllByRefKey(id);
-//            if (expendStocksEntities.isEmpty()) {
-//                try {
-//                    expendStocksService.findExpendStocksById(id);
-//                    expendStocksEntities = expendStocksRepository.findAllByRefKey(id);
-//                } catch (Exception e) {
-//                    log.info(e.getMessage());
-//                }
-//            }
-//
-//            if (expendStocksEntities.isEmpty()) {
-//                continue;
-//            }
-//
-//            dataMap.put(id, expendStocksEntities);
-//        }
-//
-//        log.info("Finish -----> CostPriceServiceImpl ------> createMapForExpendStocks");
-//        log.info("{}--{}", dataMap.size(), dataMap.hashCode());
-//        return dataMap;
-//    }
 
     private RemainingStockResponseDto getAllStocks(
             UUID guid,
@@ -560,6 +529,7 @@ public class CostPriceServiceImpl implements CostPriceService {
     private List<CostPriceControllerOutput> aggregateOnlyFast(List<CostPriceControllerOutput> products) {
         log.info("Start ------> CostPriceServiceImpl -------> aggregateOnlyFast");
         if (products == null || products.isEmpty()) {
+            log.info("Finish ------> CostPriceServiceImpl -------> aggregateOnlyFast----> List is Empty");
             return new ArrayList<>();
         }
 
@@ -590,7 +560,7 @@ public class CostPriceServiceImpl implements CostPriceService {
                 );
             } else {
                 // Суммируем количество
-                existing.setQuantity(existing.getQuantity() + p.getQuantity());
+                existing.setQuantity(existing.getQuantity().add(p.getQuantity()));
             }
         }
 

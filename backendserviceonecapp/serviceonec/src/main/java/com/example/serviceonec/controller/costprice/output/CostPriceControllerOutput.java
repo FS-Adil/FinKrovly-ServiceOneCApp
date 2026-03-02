@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 
@@ -19,8 +20,8 @@ public class CostPriceControllerOutput {
     private String name;
     private String characteristic;
     private String batch;
-    private Double quantity;
-    private Double price;
-    private Double cost;
+    private BigDecimal quantity;
+    private BigDecimal price;
+    private BigDecimal cost;
 
 }
