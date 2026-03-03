@@ -511,7 +511,7 @@ public class CostPriceServiceImpl implements CostPriceService {
                     BigDecimal remainingStockQuantity = remainingItem.getQuantityBalance().setScale(3, RoundingMode.HALF_UP);
                     BigDecimal originalRemaining = remainingStockQuantity;
 
-                    for (int i = invoiceStocksList.size() - 1; i >= 0; i--) {
+                    for (int i = 0; i < invoiceStocksList.size(); i++) {
                         InvoiceStocksEntity entity = invoiceStocksList.get(i);
                         BigDecimal invoiceQuantity = entity.getQuantity();
 
@@ -587,7 +587,8 @@ public class CostPriceServiceImpl implements CostPriceService {
         this.invoiceStocksMap.clear();
 
         String operationType = "ПоступлениеОтПоставщика";
-        List<UUID> refKeys = invoiceRepository.findAllRefKeysByOperationType(operationType);
+//        List<UUID> refKeys = invoiceRepository.findAllRefKeysByOperationType(operationType);
+        List<UUID> refKeys = invoiceRepository.findRefKeysByOperationTypeOrdered(operationType);
 
         if (refKeys.isEmpty()) {
             log.warn("⚠️ Не найдено приходных накладных с типом операции: {}", operationType);
@@ -627,21 +628,12 @@ public class CostPriceServiceImpl implements CostPriceService {
             }
         }
 
-////        Сортируем по desc
-//        // 1. Создаем Map: refKey -> Entity (для быстрого доступа O(1))
-//        Map<UUID, InvoiceStocksEntity> stocksMap = new HashMap<>();
-//        for (InvoiceStocksEntity stock : allStocks) {
-//            stocksMap.put(stock.getRefKey(), stock); // Предполагаем, что есть метод getRefKey()
-//        }
-//
-//        // 2. Формируем результат в нужном порядке
-//        List<InvoiceStocksEntity> sortedStocks = new ArrayList<>();
-//        for (UUID key : refKeys) {
-//            InvoiceStocksEntity entity = stocksMap.get(key);
-//            if (entity != null) { // Проверка на случай, если для какого-то ключа не нашлось записи
-//                sortedStocks.add(entity);
-//            }
-//        }
+        Map<UUID, Integer> orderMap = new HashMap<>();
+        for (int i = 0; i < refKeys.size(); i++) {
+            orderMap.put(refKeys.get(i), i);
+        }
+
+        allStocks.sort(Comparator.comparing(s -> orderMap.get(s.getRefKey())));
 
         this.invoiceStocksMap = allStocks.stream()
                 .collect(Collectors.groupingBy(

@@ -268,7 +268,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
     }
 
     private List<InvoiceStocksEntity> fetchStocksForId(UUID id) {
-        log.info("======== ПОИСК ЗАПАСОВ ПО ID {} ПРИХОДНОГО НАКЛАДНОГО ========", id);
+        log.debug("======== ПОИСК ЗАПАСОВ ПО ID {} ПРИХОДНОГО НАКЛАДНОГО ========", id);
         String url = String.format(
                 "/Document_ПриходнаяНакладная_Запасы?" +
                         "$filter=Ref_Key eq guid'%s'&" +

@@ -14,9 +14,9 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, String> 
     @Query("SELECT i.refKey FROM InvoiceEntity i")
     List<UUID> findAllRefKeys();
 
-//    @Query("SELECT i.refKey FROM InvoiceEntity i WHERE i.operationType = :operationType")
-//    List<UUID> findAllRefKeysByOperationType(@Param("operationType") String operationType);
+    @Query("SELECT i.refKey FROM InvoiceEntity i WHERE i.operationType = :operationType")
+    List<UUID> findAllRefKeysByOperationType(@Param("operationType") String operationType);
 
     @Query("SELECT i.refKey FROM InvoiceEntity i WHERE i.operationType = :operationType ORDER BY i.date DESC")
-    List<UUID> findAllRefKeysByOperationType(@Param("operationType") String operationType);
+    List<UUID> findRefKeysByOperationTypeOrdered(@Param("operationType") String operationType);
 }
