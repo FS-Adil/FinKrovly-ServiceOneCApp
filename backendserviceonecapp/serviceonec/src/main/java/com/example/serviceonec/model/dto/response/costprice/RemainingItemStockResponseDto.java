@@ -8,6 +8,10 @@ import java.util.UUID;
 
 @Data
 public class RemainingItemStockResponseDto {
+
+    @JsonProperty("Организация_Key")
+    private UUID organizationKey;
+
     @JsonProperty("Номенклатура_Key")
     private UUID nomenclatureKey;
 

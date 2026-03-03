@@ -203,6 +203,7 @@ public class CostPriceServiceImpl implements CostPriceService {
                         quantity
                 );
 
+
                 for (Map<String, BigDecimal> map : listCost) {
                     BigDecimal cost = map.get("cost");
                     quantity = map.get("quantity");
@@ -222,14 +223,6 @@ public class CostPriceServiceImpl implements CostPriceService {
                         );
                     }
                 }
-
-//                if (cost.compareTo(BigDecimal.ZERO) == 0) {
-//                    zeroCost.incrementAndGet();
-//                    addToResult(list, refKey, number, name, characteristic, batch, quantity, price, BigDecimal.ZERO);
-//                } else {
-//                    foundWithCost.incrementAndGet();
-//                    addToResult(list, refKey, number, name, characteristic, batch, quantity, price, cost);
-//                }
             }
         }
 
@@ -305,17 +298,21 @@ public class CostPriceServiceImpl implements CostPriceService {
 
         for (int i = 0; i < invoiceStocksList.size(); i++) {
             HashMap<String, BigDecimal> map = new HashMap<>();
+
             InvoiceStocksEntity entity = invoiceStocksList.get(i);
 
             BigDecimal invoiceQuantity = entity.getQuantity().setScale(3, RoundingMode.HALF_UP);
 
+            if (quantity.compareTo(BigDecimal.ZERO) == 0) {
+                log.debug("❌ Количество не найдена цена={}", quantity);
+                break;
+            }
             if (invoiceQuantity.compareTo(quantity) >= 0) {
                 BigDecimal newQuantity = invoiceQuantity.subtract(quantity).setScale(3, RoundingMode.HALF_UP);
 
-                InvoiceStocksEntity nextEntity = invoiceStocksList.get(i + 1);
-                entity.setQuantity(newQuantity.add(nextEntity.getQuantity()));
+                entity.setQuantity(newQuantity);
 
-                invoiceStocksList.set(i + 1, entity);
+                invoiceStocksList.set(i, entity);
                 this.invoiceStocksMap
                         .get(nomenclatureKey)
                         .get(characteristicKey)
@@ -327,20 +324,40 @@ public class CostPriceServiceImpl implements CostPriceService {
                 map.put("cost", entity.getPrice());
                 list.add(map);
                 return list;
+            } else if (invoiceQuantity.compareTo(BigDecimal.ZERO) == 0) {
+                log.debug("⚠️ Недостаточно количества в приходнике: требуется {}, доступно {}",
+                        quantity, invoiceQuantity);
             } else {
+                log.debug("⚠️ Недостаточно количества в приходнике: требуется {}, доступно {}",
+                        quantity, invoiceQuantity);
+
                 quantity = quantity.subtract(invoiceQuantity);
 
                 map.put("quantity", invoiceQuantity);
                 map.put("cost", entity.getPrice());
                 list.add(map);
-                log.debug("⚠️ Недостаточно количества в приходнике: требуется {}, доступно {}",
-                        quantity, invoiceQuantity);
+                log.debug("✅ Найдена себестоимость: цена={}, количество={}",
+                        entity.getPrice(), invoiceQuantity);
 
-                return list;
+                entity.setQuantity(BigDecimal.ZERO);
+
+                invoiceStocksList.set(i, entity);
+                this.invoiceStocksMap
+                        .get(nomenclatureKey)
+                        .get(characteristicKey)
+                        .replace(batchKey, invoiceStocksList);
             }
         }
-        log.debug("❌ Себестоимость не найдена");
-        return List.of();
+
+        if (quantity.compareTo(BigDecimal.ZERO) > 0) {
+            HashMap<String, BigDecimal> map = new HashMap<>();
+
+            map.put("quantity", quantity);
+            map.put("cost", BigDecimal.ZERO);
+            list.add(map);
+            log.debug("❌ Себестоимость не найдена");
+        }
+        return list;
     }
 
     private BigDecimal getCostForNomenclature(
@@ -395,12 +412,7 @@ public class CostPriceServiceImpl implements CostPriceService {
 
     private List<ExpendEntity> findAllExpend() {
         log.debug("🔍 Поиск всех расходных накладных в БД");
-        return expendRepository.findAll();
-    }
-
-    private List<InvoiceEntity> findAllInvoice() {
-        log.debug("🔍 Поиск всех приходных накладных в БД");
-        return invoiceRepository.findAll();
+        return expendRepository.findAllByOrderByDateDesc();
     }
 
     private Map<UUID, String> createMapForNomenclature() {
@@ -499,7 +511,7 @@ public class CostPriceServiceImpl implements CostPriceService {
                     BigDecimal remainingStockQuantity = remainingItem.getQuantityBalance().setScale(3, RoundingMode.HALF_UP);
                     BigDecimal originalRemaining = remainingStockQuantity;
 
-                    for (int i = 0; i < invoiceStocksList.size(); i++) {
+                    for (int i = invoiceStocksList.size() - 1; i >= 0; i--) {
                         InvoiceStocksEntity entity = invoiceStocksList.get(i);
                         BigDecimal invoiceQuantity = entity.getQuantity();
 
@@ -509,16 +521,16 @@ public class CostPriceServiceImpl implements CostPriceService {
                             remainingStockQuantity = remainingStockQuantity.subtract(invoiceQuantity);
                             adjustedRecords.incrementAndGet();
 
-                            log.trace("    - Полное списание: приходник {} ({}), остаток после: {}",
-                                    i, invoiceQuantity, remainingStockQuantity);
+                            log.debug("{}   - Полное списание: приходник {} ({}), остаток после: {}",
+                                    nomenclatureKey, i, invoiceQuantity, remainingStockQuantity);
                         } else {
                             // Частичное списание
                             entity.setQuantity(invoiceQuantity.subtract(remainingStockQuantity));
                             remainingStockQuantity = BigDecimal.valueOf(0.0);
                             adjustedRecords.incrementAndGet();
 
-                            log.trace("    - Частичное списание: приходник {} ({} -> {}), остаток обнулен",
-                                    i, invoiceQuantity, entity.getQuantity());
+                            log.debug("{}   - Частичное списание: приходник {} ({} -> {}), остаток обнулен",
+                                    nomenclatureKey, i, invoiceQuantity, entity.getQuantity());
                             break;
                         }
 
@@ -529,7 +541,7 @@ public class CostPriceServiceImpl implements CostPriceService {
                     remainingItem.setQuantityBalance(remainingStockQuantity);
                     this.remainigStocksMap.get(nomenclatureKey).get(characteristicKey).replace(batchKey, remainingItem);
 
-                    log.trace("  - Партия {}: скорректировано, остаток изменен с {} на {}",
+                    log.debug("  - Партия {}: скорректировано, остаток изменен с {} на {}",
                             batchKey, originalRemaining, remainingStockQuantity);
                 }
             }
@@ -550,16 +562,20 @@ public class CostPriceServiceImpl implements CostPriceService {
         log.debug("Получено {} записей остатков из 1С", entities.size());
 
         for (RemainingItemStockResponseDto entity : entities) {
-            Map<UUID, Map<UUID, RemainingItemStockResponseDto>> mapLevel2 = new HashMap<>();
-            Map<UUID, RemainingItemStockResponseDto> mapLevel1 = new HashMap<>();
+            if (entity.getOrganizationKey().compareTo(organizationId) == 0) {
+                Map<UUID, Map<UUID, RemainingItemStockResponseDto>> mapLevel2 = new HashMap<>();
+                Map<UUID, RemainingItemStockResponseDto> mapLevel1 = new HashMap<>();
 
-            UUID id_nom = entity.getNomenclatureKey();
-            UUID id_char = entity.getCharacteristicKey();
-            UUID id_b = entity.getBatchKey();
+                UUID id_nom = entity.getNomenclatureKey();
+                UUID id_char = entity.getCharacteristicKey();
+                UUID id_b = entity.getBatchKey();
 
-            mapLevel1.put(id_b, entity);
-            mapLevel2.put(id_char, mapLevel1);
-            this.remainigStocksMap.put(id_nom, mapLevel2);
+                mapLevel1.put(id_b, entity);
+                mapLevel2.put(id_char, mapLevel1);
+                this.remainigStocksMap.put(id_nom, mapLevel2);
+            } else {
+                log.debug("❌ {}<->{} Разные организации!!", entity.getOrganizationKey(),organizationId);
+            }
         }
 
         log.debug("✅ Остатки загружены, уникальных номенклатур: {}", this.remainigStocksMap.size());
@@ -610,6 +626,22 @@ public class CostPriceServiceImpl implements CostPriceService {
                 log.error("❌ Ошибка загрузки недостающих запасов: {}", e.getMessage(), e);
             }
         }
+
+////        Сортируем по desc
+//        // 1. Создаем Map: refKey -> Entity (для быстрого доступа O(1))
+//        Map<UUID, InvoiceStocksEntity> stocksMap = new HashMap<>();
+//        for (InvoiceStocksEntity stock : allStocks) {
+//            stocksMap.put(stock.getRefKey(), stock); // Предполагаем, что есть метод getRefKey()
+//        }
+//
+//        // 2. Формируем результат в нужном порядке
+//        List<InvoiceStocksEntity> sortedStocks = new ArrayList<>();
+//        for (UUID key : refKeys) {
+//            InvoiceStocksEntity entity = stocksMap.get(key);
+//            if (entity != null) { // Проверка на случай, если для какого-то ключа не нашлось записи
+//                sortedStocks.add(entity);
+//            }
+//        }
 
         this.invoiceStocksMap = allStocks.stream()
                 .collect(Collectors.groupingBy(
@@ -688,7 +720,7 @@ public class CostPriceServiceImpl implements CostPriceService {
                 "Period=datetime'" + endDate + "'" +
                 "Condition='cast(Организация_Key, 'Catalog_Организации') eq guid'%s'')" +
                 "?" +
-                "$select=Номенклатура_Key, Характеристика_Key, Партия_Key, КоличествоBalance, СуммаBalance&" +
+                "$select=Организация_Key,Номенклатура_Key, Характеристика_Key, Партия_Key, КоличествоBalance, СуммаBalance&" +
                 "$format=json", guid);
 
         log.debug("URL запроса: {}", url.replaceAll("['\"]", ""));

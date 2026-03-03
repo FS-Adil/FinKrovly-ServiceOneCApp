@@ -37,7 +37,7 @@ spring:
 # Настройки логирования - исправлено: теперь на одном уровне с spring
 logging:
   level:
-    com.example.serviceonec: DEBUG                    # Уровень логирования нашего приложения
+    com.example.serviceonec: INFO                    # Уровень логирования нашего приложения
     org.springframework.web: INFO
     org.hibernate: WARN                        # Hibernate логи только предупреждения и ошибки
     org.hibernate.SQL: WARN                   # SQL логи (только для отладки)
