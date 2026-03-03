@@ -12,9 +12,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -25,112 +27,322 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
     private final InvoiceStocksRepository invoiceStocksRepository;
     private final InvoiceStocksMapper invoiceStocksMapper;
 
+    private static final int BATCH_SIZE = 500;
+    private static final int REQUEST_DELAY_MS = 20;
+    private static final int MAX_CONCURRENT_REQUESTS = 5;
+
     @Override
     public Page<InvoiceStocksEntity> getAllInvoiceStocks() {
 
-        log.info("-------> InvoiceStocksServiceImpl -------> getAllInvoiceStocks");
+        log.info("===== НАЧАЛО ЗАГРУЗКИ ВСЕХ ЗАПАСОВ ИЗ ПРИХОДНЫХ НАКЛАДНЫХ =====");
+        log.info("Параметры загрузки: batchSize={}", BATCH_SIZE);
 
+        // Очистка таблицы перед загрузкой
+        log.info("Очистка таблицы запасов из приходных накладных...");
         invoiceStocksRepository.deleteAll();
-
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-//        String startStr = startDate.format(formatter);
-//        String endStr = endDate.format(formatter);
+        log.info("✅ Таблица очищена");
 
         boolean isStop = true;
-        int top = 500;
         int skip = 0;
+        int totalBatches = 0;
+        AtomicLong totalRecordsLoaded = new AtomicLong(0);
+
+        long startTime = System.currentTimeMillis();
 
         while (isStop) {
+            totalBatches++;
+            long batchStartTime = System.currentTimeMillis();
 
-            log.info("------> Цикл с данными запроса: top({}) - skip({})", top, skip);
-
-            InvoiceStocksResponseDto invoiceStocksResponseDto = getInvoiceStocks(top, skip);
-
-            if (invoiceStocksResponseDto.getValue().isEmpty()) {
-                isStop = false;
-            }
-
-            for (InvoiceStocksItemResponseDto value : invoiceStocksResponseDto.getValue()) {
-                invoiceStocksRepository.save(invoiceStocksMapper.toEntity(value));
-            }
-
-            skip+=top;
+            log.info("--- ПАРТИЯ #{}: запрос с skip={}, top={} ---", totalBatches, skip, BATCH_SIZE);
 
             try {
-                TimeUnit.MILLISECONDS.sleep(20);
-            } catch (InterruptedException e) {
+                InvoiceStocksResponseDto invoiceStocksResponseDto = getInvoiceStocks(BATCH_SIZE, skip);
+
+                List<InvoiceStocksItemResponseDto> items = invoiceStocksResponseDto.getValue();
+
+                if (items.isEmpty()) {
+                    log.info("📦 ПАРТИЯ #{}: пустой ответ, завершаем загрузку", totalBatches);
+                    isStop = false;
+                } else {
+                    int batchSize = items.size();
+                    long saveStartTime = System.currentTimeMillis();
+
+                    int savedCount = 0;
+                    for (InvoiceStocksItemResponseDto value : items) {
+                        invoiceStocksRepository.save(invoiceStocksMapper.toEntity(value));
+                        savedCount++;
+                    }
+
+                    totalRecordsLoaded.addAndGet(savedCount);
+                    long saveTime = System.currentTimeMillis() - saveStartTime;
+                    long batchTime = System.currentTimeMillis() - batchStartTime;
+
+                    log.info("📦 ПАРТИЯ #{}: получено {} записей, сохранено {} (всего: {}, время сохранения: {} мс, общее время партии: {} мс)",
+                            totalBatches, items.size(), savedCount, totalRecordsLoaded.get(), saveTime, batchTime);
+                }
+
+                skip += BATCH_SIZE;
+
+                // Небольшая задержка между запросами
+                try {
+                    TimeUnit.MILLISECONDS.sleep(REQUEST_DELAY_MS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
+                }
+
+            } catch (Exception e) {
+                log.error("❌ Ошибка при обработке партии #{} с skip={}: {}", totalBatches, skip, e.getMessage(), e);
                 throw new RuntimeException(e);
             }
         }
 
+        long totalTime = System.currentTimeMillis() - startTime;
+
+        log.info("===== ЗАВЕРШЕНИЕ ЗАГРУЗКИ =====");
+        log.info("✅ Всего загружено записей: {}", totalRecordsLoaded.get());
+        log.info("📊 Всего обработано партий: {}", totalBatches);
+        log.info("⏱️ Общее время выполнения: {} мс ({} сек)", totalTime, totalTime / 1000);
+        log.info("📈 Средняя скорость: {} записей/сек",
+                totalRecordsLoaded.get() / (totalTime / 1000 > 0 ? totalTime / 1000 : 1));
+
         log.info("------> Все ЗАПАСЫ из приходников в 1с найдены и сохранены в базу");
-        return invoiceStocksRepository.findAll(PageRequest.of(0, 10));
+
+        Page<InvoiceStocksEntity> result = invoiceStocksRepository.findAll(PageRequest.of(0, 10));
+        log.info("📄 Возвращаем первые {} записей из {} всего", result.getNumberOfElements(), result.getTotalElements());
+
+        return result;
     }
 
     @Override
     public void getInvoiceStocksById(UUID uuid) {
-        String url = String.format("Document_ПриходнаяНакладная_Запасы?" +
-                "$filter=Номенклатура_Key eq guid'%s'&" +
-                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
-                "$format=json", uuid);
+        log.info("🔍 Поиск запасов по одному ID: {}", uuid);
 
-//        log.info("{}", url);
-
-        InvoiceStocksResponseDto response;
+        long startTime = System.currentTimeMillis();
 
         try {
+            String url = String.format("/Document_ПриходнаяНакладная_Запасы?" +
+                    "$filter=Ref_Key eq guid'%s'&" +
+                    "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                    "$format=json", uuid);
 
-            response = restClientConfig.restClient().get()
+            log.debug("URL запроса: {}", url.replaceAll("['\"]", ""));
+
+            InvoiceStocksResponseDto response = restClientConfig.restClient().get()
                     .uri(url)
                     .retrieve()
                     .body(InvoiceStocksResponseDto.class);
 
+            assert response != null;
+            List<InvoiceStocksItemResponseDto> items = response.getValue();
+
+            if (!items.isEmpty()) {
+                long saveStartTime = System.currentTimeMillis();
+
+                for (InvoiceStocksItemResponseDto value : items) {
+                    invoiceStocksRepository.save(invoiceStocksMapper.toEntity(value));
+                }
+
+                long saveTime = System.currentTimeMillis() - saveStartTime;
+                long totalTime = System.currentTimeMillis() - startTime;
+
+                log.info("✅ ID {}: найдено {} записей, сохранено в БД (время сохранения: {} мс, общее время: {} мс)",
+                        uuid, items.size(), saveTime, totalTime);
+            } else {
+                log.info("⚠️ ID {}: записи не найдены (время поиска: {} мс)",
+                        uuid, System.currentTimeMillis() - startTime);
+            }
+
         } catch (Exception e) {
-            // Логирование ошибки
-            log.error(
-                    String.format("Ошибка при получении ЗАПАСОВ из приходных накладных по id %s", uuid), String.valueOf(e)
-            );
+            log.error("❌ Ошибка при получении ЗАПАСОВ из приходных накладных по id {}: {}", uuid, e.getMessage(), e);
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
-
-        assert response != null;
-        for (InvoiceStocksItemResponseDto value : response.getValue()) {
-            invoiceStocksRepository.save(invoiceStocksMapper.toEntity(value));
-        }
-
-//        log.info("------> Конец метода по поиску в 1с всех ЗАПАСОВ из приходника по id");
     }
 
+    @Override
+    public List<InvoiceStocksEntity> findInvoiceStocksByIds(Set<UUID> ids) {
+        log.info("===== ПОИСК ЗАПАСОВ ПО СПИСКУ ID ПРИХОДНЫХ НАКЛАДНЫХ =====");
+
+        if (ids == null || ids.isEmpty()) {
+            log.warn("⚠️ Список ID пуст или равен null");
+            return Collections.emptyList();
+        }
+
+        log.info("Всего ID для поиска: {}", ids.size());
+        log.info("Первые 10 ID: {}", ids.stream().limit(10).collect(Collectors.toList()));
+
+        List<InvoiceStocksEntity> allEntitiesToSave = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger processedCount = new AtomicInteger(0);
+        AtomicInteger foundCount = new AtomicInteger(0);
+        AtomicLong totalItemsFound = new AtomicLong(0);
+
+        long startTime = System.currentTimeMillis();
+
+        // Создаем пул потоков
+        ExecutorService executor = Executors.newFixedThreadPool(MAX_CONCURRENT_REQUESTS);
+        log.info("Создан пул потоков на {} потоков для обработки {} ID", MAX_CONCURRENT_REQUESTS, ids.size());
+
+        try {
+            // Создаем список задач
+            List<CompletableFuture<Void>> futures = ids.stream()
+                    .map(id -> CompletableFuture.runAsync(() -> {
+                        long requestStartTime = System.currentTimeMillis();
+                        String threadName = Thread.currentThread().getName();
+                        int currentProcessed = processedCount.incrementAndGet();
+
+                        log.debug("[Поток: {}] Обработка ID {}/{}: {}",
+                                threadName, currentProcessed, ids.size(), id);
+
+                        try {
+                            List<InvoiceStocksEntity> entities = fetchStocksForId(id);
+
+                            if (!entities.isEmpty()) {
+                                allEntitiesToSave.addAll(entities);
+                                int found = foundCount.incrementAndGet();
+                                long itemsFound = totalItemsFound.addAndGet(entities.size());
+
+                                long requestTime = System.currentTimeMillis() - requestStartTime;
+                                log.info("[Поток: {}] ✅ ID {}: найдено {} записей (всего найдено ID: {}, всего записей: {}, время: {} мс)",
+                                        threadName, id, entities.size(), found, itemsFound, requestTime);
+                            } else {
+                                log.debug("[Поток: {}] ⚠️ ID {}: записи не найдены", threadName, id);
+                            }
+                        } catch (Exception e) {
+                            log.error("[Поток: {}] ❌ Ошибка при обработке ID {}: {}", threadName, id, e.getMessage(), e);
+                        }
+                    }, executor))
+                    .collect(Collectors.toList());
+
+            // Ждем выполнения всех задач с таймаутом
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(5, TimeUnit.MINUTES);
+
+            log.info("✅ Все запросы завершены");
+
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            log.error("❌ Ошибка или таймаут при выполнении запросов: {}", e.getMessage(), e);
+        } finally {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                    log.warn("⚠️ Принудительное завершение потоков");
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                log.error("❌ Ошибка при завершении пула потоков: {}", e.getMessage());
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        long totalTime = System.currentTimeMillis() - startTime;
+
+        // Сохранение результатов
+        if (!allEntitiesToSave.isEmpty()) {
+            log.info("💾 Начинаем сохранение {} записей в БД...", allEntitiesToSave.size());
+            long saveStartTime = System.currentTimeMillis();
+
+            try {
+                List<InvoiceStocksEntity> savedEntities = invoiceStocksRepository.saveAll(allEntitiesToSave);
+                long saveTime = System.currentTimeMillis() - saveStartTime;
+                log.info("✅ Успешно сохранено {} записей в БД за {} мс", savedEntities.size(), saveTime);
+            } catch (Exception e) {
+                log.error("❌ Ошибка при сохранении запасов в БД: {}", e.getMessage(), e);
+                saveEntitiesIndividually(allEntitiesToSave);
+            }
+        } else {
+            log.info("⚠️ Нет записей для сохранения в БД");
+        }
+
+        log.info("===== СТАТИСТИКА ПОИСКА =====");
+        log.info("📊 Всего обработано ID: {}", ids.size());
+        log.info("✅ Найдено ID с запасами: {} ({}% от общего)",
+                foundCount.get(),
+                String.format("%.1f", (foundCount.get() * 100.0 / ids.size())));
+        log.info("📦 Всего найдено записей запасов: {}", totalItemsFound.get());
+        log.info("⏱️ Общее время выполнения: {} мс ({} сек)", totalTime, totalTime / 1000);
+        log.info("📈 Средняя скорость: {} ID/сек",
+                ids.size() / (totalTime / 1000 > 0 ? totalTime / 1000 : 1));
+
+        return allEntitiesToSave;
+    }
+
+    private List<InvoiceStocksEntity> fetchStocksForId(UUID id) {
+        log.debug("======== ПОИСК ЗАПАСОВ ПО ID {} ПРИХОДНОГО НАКЛАДНОГО ========", id);
+        String url = String.format(
+                "/Document_ПриходнаяНакладная_Запасы?" +
+                        "$filter=Ref_Key eq guid'%s'&" +
+                        "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                        "$format=json", id);
+
+        try {
+            InvoiceStocksResponseDto response = restClientConfig.restClient().get()
+                    .uri(url)
+                    .retrieve()
+                    .body(InvoiceStocksResponseDto.class);
+
+            if (response != null && response.getValue() != null && !response.getValue().isEmpty()) {
+                return response.getValue().stream()
+                        .map(invoiceStocksMapper::toEntity)
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.error("Ошибка при получении ЗАПАСОВ приходника для id: {}", id, e);
+            throw new RuntimeException("Ошибка получения данных из 1С для id: " + id, e);
+        }
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Резервный метод для сохранения записей по одной в случае ошибки пакетного сохранения
+     */
+    private void saveEntitiesIndividually(List<InvoiceStocksEntity> entities) {
+        log.info("🔄 Пробуем сохранить записи по одной (всего: {})", entities.size());
+
+        int successCount = 0;
+        int errorCount = 0;
+        long totalStartTime = System.currentTimeMillis();
+
+        for (InvoiceStocksEntity entity : entities) {
+            try {
+                long saveStartTime = System.currentTimeMillis();
+                invoiceStocksRepository.save(entity);
+                successCount++;
+                log.debug("✅ Сохранена запись {}/{} (ID: {}, время: {} мс)",
+                        successCount + errorCount, entities.size(), entity.getRefKey(),
+                        System.currentTimeMillis() - saveStartTime);
+            } catch (Exception e) {
+                errorCount++;
+                log.error("❌ Ошибка при сохранении записи: {} (Ref_Key: {})",
+                        e.getMessage(), entity.getRefKey());
+            }
+        }
+
+        long totalTime = System.currentTimeMillis() - totalStartTime;
+        log.info("📊 Итоги индивидуального сохранения: успешно {}, ошибок {}, общее время {} мс",
+                successCount, errorCount, totalTime);
+    }
 
     private InvoiceStocksResponseDto getInvoiceStocks(Integer top, Integer skip) {
-//        log.info("------> Старт метода по поиску в 1с всех ЗАПАСОВ из приходника");
-
         String url = String.format("/Document_ПриходнаяНакладная_Запасы?" +
-//                "$filter=Date ge datetime'" + startStr + "' " +
-//                    "and Date le datetime'" + endStr + "'" +
-//                "&" +
                 "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
                 "$top=%s&$skip=%s&" +
                 "$format=json", top, skip);
 
-        InvoiceStocksResponseDto response;
+        log.debug("URL запроса: {}", url.replaceAll("['\"]", ""));
 
         try {
-
-            response = restClientConfig.restClient().get()
+            InvoiceStocksResponseDto response = restClientConfig.restClient().get()
                     .uri(url)
                     .retrieve()
                     .body(InvoiceStocksResponseDto.class);
 
+            return response;
+
         } catch (Exception e) {
-            // Логирование ошибки
-            log.error(
-                    String.format("Ошибка при получении ЗАПАСОВ из приходных накладных за период с %s по %s", 1, 2), String.valueOf(e)
-            );
+            log.error("❌ Ошибка при получении ЗАПАСОВ из приходных накладных с skip={}: {}", skip, e.getMessage(), e);
             throw new RuntimeException("Ошибка получения данных из 1С", e);
         }
-
-//        log.info("------> Конец метода по поиску в 1с всех ЗАПАСОВ из приходников");
-        return response;
     }
 }
