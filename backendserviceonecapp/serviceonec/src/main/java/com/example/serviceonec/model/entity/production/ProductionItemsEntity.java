@@ -1,6 +1,7 @@
 package com.example.serviceonec.model.entity.production;
 
 import com.example.serviceonec.model.entity.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -42,5 +43,11 @@ public class ProductionItemsEntity extends BaseEntity {
 
     @Column(name = "structural_unit_key", nullable = false)
     private UUID structuralUnitKey;
+
+    @Column(name = "link_key")
+    private String linkKey;
+
+    @Column(name = "order_key")
+    private UUID orderKey;
 
 }

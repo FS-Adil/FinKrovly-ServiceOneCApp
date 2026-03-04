@@ -31,6 +31,9 @@ public class ProductionItemResponseDto {
     @JsonProperty("Продукция")
     private List<ProductionItemsDto> products;
 
+    @JsonProperty("РаспределениеЗапасов")
+    private List<ProductionDistributionStocksDto> distributionStocks;
+
     @Data
     public static class ProductionStocksDto {
 
@@ -175,5 +178,53 @@ public class ProductionItemResponseDto {
 
         @JsonProperty("_Штук")
         private String pieces;
+    }
+
+    @Data
+    public static class ProductionDistributionStocksDto {
+        @JsonProperty("Ref_Key")
+        private UUID refKey;
+
+        @JsonProperty("LineNumber")
+        private String lineNumber;
+
+        @JsonProperty("Количество")
+        private Double quantity;
+
+        @JsonProperty("КлючСвязиПродукция")
+        private String productLinkKey;
+
+        @JsonProperty("УдалитьКлючСвязиЗапасы")
+        private String deleteStockLinkKey;
+
+        @JsonProperty("Номенклатура_Key")
+        private UUID nomenclatureKey;
+
+        @JsonProperty("Характеристика_Key")
+        private UUID characteristicKey;
+
+        @JsonProperty("Партия_Key")
+        private UUID batchKey;
+
+        @JsonProperty("ЕдиницаИзмерения")
+        private String unitOfMeasurement;
+
+        @JsonProperty("ЕдиницаИзмерения_Type")
+        private String unitOfMeasurementType;
+
+        @JsonProperty("Спецификация_Key")
+        private UUID specificationKey;
+
+        @JsonProperty("СтруктурнаяЕдиница_Key")
+        private UUID structuralUnitKey;
+
+        @JsonProperty("Ячейка_Key")
+        private UUID cellKey;
+
+        @JsonProperty("ЗаказПокупателя_Key")
+        private UUID customerOrderKey;
+
+        @JsonProperty("Этап_Key")
+        private UUID stageKey;
     }
 }

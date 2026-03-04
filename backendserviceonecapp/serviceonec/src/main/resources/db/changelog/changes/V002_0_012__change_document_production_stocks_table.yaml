@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: V002_0_012__change_document_production_stocks_table
+      author: adilhan
+      changes:
+        - addColumn:
+            tableName: production_stocks
+            columns:
+              - column:
+                  name: link_key
+                  type: VARCHAR(100)
+                  defaultValue: '0'
+              - column:
+                  name: order_key
+                  type: UUID
+                  defaultValue: "CAST('00000000-0000-0000-0000-000000000000' AS UUID)"

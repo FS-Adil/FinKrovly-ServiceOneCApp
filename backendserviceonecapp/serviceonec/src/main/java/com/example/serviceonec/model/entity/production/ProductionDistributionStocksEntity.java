@@ -14,8 +14,8 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table(name = "production_stocks")
-public class ProductionStocksEntity extends BaseEntity {
+@Table(name = "production_distribution_stocks")
+public class ProductionDistributionStocksEntity extends BaseEntity {
 
     @Column(name = "ref_key", nullable = false)
     private UUID refKey;
@@ -41,10 +41,9 @@ public class ProductionStocksEntity extends BaseEntity {
     @Column(name = "structural_unit_key", nullable = false)
     private UUID structuralUnitKey;
 
-    @Column(name = "link_key")
-    private String linkKey;
+    @Column(name = "product_link_key")
+    private String productLinkKey;
 
-    @Column(name = "order_key")
-    private UUID orderKey;
-
+    @Column(name = "customer_order_key")
+    private UUID customerOrderKey;
 }

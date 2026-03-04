@@ -1,0 +1,78 @@
+databaseChangeLog:
+  - changeSet:
+      id: V001_0_015__create_document_production_distribution_stocks_table
+      author: adilhan
+      changes:
+        - createTable:
+            tableName: production_distribution_stocks
+            remarks: Таблица распределения запасов для производства
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  remarks: Первичный ключ
+              - column:
+                  name: ref_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: Ref_Key распределения запасов
+              - column:
+                  name: line_number
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                  remarks: Номер строки
+              - column:
+                  name: nomenclature_key
+                  type: UUID
+                  remarks: Номенклатура_Key
+              - column:
+                  name: characteristic_key
+                  type: UUID
+                  remarks: Характеристика_Key
+              - column:
+                  name: batch_key
+                  type: UUID
+                  remarks: Партия_Key
+              - column:
+                  name: quantity
+                  type: DECIMAL(19, 5)
+                  remarks: Количество
+              - column:
+                  name: specification_key
+                  type: UUID
+                  remarks: Спецификация_Key
+              - column:
+                  name: structural_unit_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: СтруктурнаяЕдиница_Key
+              - column:
+                  name: product_link_key
+                  type: VARCHAR(100)
+                  remarks: Ключ связи с продукцией
+              - column:
+                  name: customer_order_key
+                  type: UUID
+                  remarks: Заказ покупателя_Key
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  remarks: Дата создания
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  remarks: Дата обновления
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  remarks: Версия для optimistic lock
