@@ -1,0 +1,117 @@
+databaseChangeLog:
+  - changeSet:
+      id: V001_0_016__create_document_expend_full_table
+      author: adilhan
+      changes:
+        - createTable:
+            tableName: expend_full
+            remarks: "Таблица расходов"
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  remarks: "Первичный ключ"
+
+              - column:
+                  name: date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+                  remarks: "Дата"
+
+              - column:
+                  name: document_type
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                  remarks: "Тип документа"
+
+              - column:
+                  name: document_type_one_c
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                  remarks: "Тип документа (1С)"
+
+              - column:
+                  name: number
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                  remarks: "Номер документа"
+
+              - column:
+                  name: ref_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    unique: true
+                  remarks: "Ключ ссылки"
+
+              - column:
+                  name: organization_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: "Ключ организации"
+
+              - column:
+                  name: structural_unit_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: "Ключ структурного подразделения"
+
+              - column:
+                  name: customer_order
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: "Заказ клиента"
+
+              - column:
+                  name: nomenclature_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: "Ключ номенклатуры"
+
+              - column:
+                  name: characteristic_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: "Ключ характеристики"
+
+              - column:
+                  name: batch_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: "Ключ партии"
+
+              - column:
+                  name: quantity
+                  type: DECIMAL(19, 2)
+                  constraints:
+                    nullable: false
+                  remarks: "Количество"
+
+              - column:
+                  name: price
+                  type: DECIMAL(19, 2)
+                  constraints:
+                    nullable: false
+                  remarks: "Цена"
+
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: true
+                  remarks: "Дата создания записи"

@@ -318,6 +318,254 @@ public class ProductionServiceImpl implements ProductionService {
         return null;
     }
 
+    @Override
+    public void getAllProductionByCustomerOrders(List<UUID> missingCustomerOrderKeys) {
+        log.info("===== НАЧАЛО ЗАГРУЗКИ НЕ ДОСТАЮЩИХ ПРОИЗВОДСТВ =====");
+        log.info("Всего заказов для обработки: {}", missingCustomerOrderKeys.size());
+
+        if (missingCustomerOrderKeys == null || missingCustomerOrderKeys.isEmpty()) {
+            log.warn("Список заказов пуст");
+            return;
+        }
+
+        // Создаем фиксированный пул потоков с 3 потоками
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        // Список для отслеживания завершения задач
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        // Счетчики для отслеживания прогресса
+        AtomicInteger totalProcessed = new AtomicInteger(0);
+        AtomicInteger totalSuccess = new AtomicInteger(0);
+        AtomicInteger totalFailed = new AtomicInteger(0);
+        AtomicInteger totalSkipped = new AtomicInteger(0);
+
+        // Разбиваем список на части для каждого потока
+        int chunkSize = (int) Math.ceil((double) missingCustomerOrderKeys.size() / 3);
+        log.info("Размер чанка для каждого потока: {}", chunkSize);
+
+        for (int i = 0; i < 3; i++) {
+            int start = i * chunkSize;
+            int end = Math.min(start + chunkSize, missingCustomerOrderKeys.size());
+            int threadNumber = i + 1;
+
+            if (start >= missingCustomerOrderKeys.size()) {
+                log.info("Поток {} пропущен (нет данных)", threadNumber);
+                break;
+            }
+
+            List<UUID> chunk = missingCustomerOrderKeys.subList(start, end);
+            log.info("Поток {} получил чанк с {} по {} (всего {} заказов)",
+                    threadNumber, start, end - 1, chunk.size());
+
+            // Создаем асинхронную задачу для каждого чанка
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                processCustomerOrdersChunk(chunk, threadNumber, totalProcessed, totalSuccess, totalFailed, totalSkipped);
+            }, executorService);
+
+            futures.add(future);
+        }
+
+        // Ожидаем завершения всех задач
+        try {
+            log.info("Ожидание завершения всех потоков...");
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+            // Логируем итоговую статистику
+            log.info("===== ИТОГОВАЯ СТАТИСТИКА =====");
+            log.info("Всего обработано заказов: {}", totalProcessed.get());
+            log.info("✅ Успешно: {}", totalSuccess.get());
+            log.info("❌ С ошибками: {}", totalFailed.get());
+            log.info("⏭️ Пропущено (нет данных): {}", totalSkipped.get());
+
+        } catch (Exception e) {
+            log.error("❌ Ошибка при выполнении многопоточной загрузки: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        } finally {
+            // Корректно завершаем executor service
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                    log.warn("Принудительное завершение потоков");
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                log.error("Прерывание при завершении потоков");
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        log.info("===== ЗАВЕРШЕНИЕ ЗАГРУЗКИ НЕ ДОСТАЮЩИХ ПРОИЗВОДСТВ =====");
+    }
+
+    private void processCustomerOrdersChunk(List<UUID> customerOrderKeys, int threadNumber,
+                                            AtomicInteger totalProcessed, AtomicInteger totalSuccess,
+                                            AtomicInteger totalFailed, AtomicInteger totalSkipped) {
+        String threadName = Thread.currentThread().getName();
+        log.info("[Поток {}: {}] НАЧАЛО обработки {} заказов", threadNumber, threadName, customerOrderKeys.size());
+
+        int processedInThread = 0;
+        int successInThread = 0;
+        int failedInThread = 0;
+        int skippedInThread = 0;
+
+        for (int i = 0; i < customerOrderKeys.size(); i++) {
+            UUID uuid = customerOrderKeys.get(i);
+            int itemNumber = i + 1;
+
+            try {
+                log.debug("[Поток {}] Обработка заказа {}/{}: {}",
+                        threadNumber, itemNumber, customerOrderKeys.size(), uuid);
+
+                ProductionResponseDto productionResponseDto = getResponseByMissingCustomerOrder(uuid);
+                processedInThread++;
+                totalProcessed.incrementAndGet();
+
+                if (productionResponseDto != null && productionResponseDto.getValue() != null) {
+                    int itemsCount = productionResponseDto.getValue().size();
+                    log.info("[Поток {}] Заказ {}: найдено {} производственных документов",
+                            threadNumber, uuid, itemsCount);
+
+                    if (itemsCount > 0) {
+                        processProductionItems(productionResponseDto.getValue(), threadNumber, uuid);
+                        successInThread++;
+                        totalSuccess.incrementAndGet();
+                        log.info("[Поток {}] ✅ Заказ {} успешно обработан ({} документов)",
+                                threadNumber, uuid, itemsCount);
+                    } else {
+                        skippedInThread++;
+                        totalSkipped.incrementAndGet();
+                        log.info("[Поток {}] ⏭️ Заказ {}: нет производственных документов (пропущен)",
+                                threadNumber, uuid);
+                    }
+                } else {
+                    skippedInThread++;
+                    totalSkipped.incrementAndGet();
+                    log.info("[Поток {}] ⏭️ Заказ {}: нет данных от 1С (пропущен)", threadNumber, uuid);
+                }
+
+            } catch (Exception e) {
+                failedInThread++;
+                totalFailed.incrementAndGet();
+                log.error("[Поток {}] ❌ Ошибка при обработке заказа {}: {}",
+                        threadNumber, uuid, e.getMessage());
+                log.debug("[Поток {}] Детали ошибки: ", threadNumber, e);
+            }
+
+            // Логируем прогресс каждые 10 заказов
+            if (itemNumber % 10 == 0 || itemNumber == customerOrderKeys.size()) {
+                log.info("[Поток {}] Прогресс: {}/{} заказов (✅ {} успешно, ❌ {} ошибок, ⏭️ {} пропущено)",
+                        threadNumber, itemNumber, customerOrderKeys.size(),
+                        successInThread, failedInThread, skippedInThread);
+            }
+        }
+
+        log.info("[Поток {}: {}] ЗАВЕРШЕНИЕ. Итого в потоке: обработано {}, ✅ успешно {}, ❌ ошибок {}, ⏭️ пропущено {}",
+                threadNumber, threadName, processedInThread, successInThread, failedInThread, skippedInThread);
+    }
+
+    private void processProductionItems(List<ProductionItemResponseDto> items, int threadNumber, UUID parentOrderUuid) {
+        log.debug("[Поток {}] Начало сохранения {} производственных документов для заказа {}",
+                threadNumber, items.size(), parentOrderUuid);
+
+        int savedItems = 0;
+        int failedItems = 0;
+
+        for (ProductionItemResponseDto value : items) {
+            try {
+                // Сохраняем основной документ
+                UUID refKey = value.getRefKey();
+                productionRepository.save(productionMapper.toEntity(value));
+                log.debug("[Поток {}] Сохранен основной документ: {}", threadNumber, refKey);
+
+                // Сохраняем запасы
+                if (value.getStocks() != null && !value.getStocks().isEmpty()) {
+                    int stocksCount = 0;
+                    for (ProductionItemResponseDto.ProductionStocksDto stock : value.getStocks()) {
+                        productionStocksRepository.save(productionStocksMapper.toEntity(stock));
+                        stocksCount++;
+                    }
+                    log.debug("[Поток {}] Сохранено {} записей запасов для документа {}",
+                            threadNumber, stocksCount, refKey);
+                }
+
+                // Сохраняем продукцию
+                if (value.getProducts() != null && !value.getProducts().isEmpty()) {
+                    int productsCount = 0;
+                    for (ProductionItemResponseDto.ProductionItemsDto item : value.getProducts()) {
+                        productionItemsRepository.save(productionItemsMapper.toEntity(item));
+                        productsCount++;
+                    }
+                    log.debug("[Поток {}] Сохранено {} записей продукции для документа {}",
+                            threadNumber, productsCount, refKey);
+                }
+
+                // Сохраняем распределение запасов
+                if (value.getDistributionStocks() != null && !value.getDistributionStocks().isEmpty()) {
+                    int distributionCount = 0;
+                    for (ProductionItemResponseDto.ProductionDistributionStocksDto item : value.getDistributionStocks()) {
+                        productionDistributionStocksRepository.save(productionDestributionStocksMapper.toEntity(item));
+                        distributionCount++;
+                    }
+                    log.debug("[Поток {}] Сохранено {} записей распределения запасов для документа {}",
+                            threadNumber, distributionCount, refKey);
+                }
+
+                savedItems++;
+
+            } catch (DataIntegrityViolationException e) {
+                failedItems++;
+                log.error("[Поток {}] ❌ Ошибка целостности данных для документа {}: {}",
+                        threadNumber, value.getRefKey(), e.getMessage());
+            } catch (Exception e) {
+                failedItems++;
+                log.error("[Поток {}] ❌ Неожиданная ошибка при сохранении документа {}: {}",
+                        threadNumber, value.getRefKey(), e.getMessage());
+            }
+        }
+
+        log.debug("[Поток {}] Завершено сохранение документов для заказа {}: сохранено {}, ошибок {}",
+                threadNumber, parentOrderUuid, savedItems, failedItems);
+    }
+
+    private ProductionResponseDto getResponseByMissingCustomerOrder(UUID customerOrderKeys) {
+        String url = String.format("/Document_СборкаЗапасов?" +
+                        "$filter=Posted eq true" +
+                        " and ЗаказПокупателя_Key eq guid'%s'" +
+                        "&" +
+                        "$select=Ref_Key, Number, Date, ЗаказПокупателя_Key, Организация_Key, Продукция, Запасы, РаспределениеЗапасов&" +
+                        "$format=json",
+                customerOrderKeys
+        );
+
+        log.debug("URL запроса для заказа {}: {}", customerOrderKeys, url.replaceAll("['\"]", ""));
+        long startTime = System.currentTimeMillis();
+
+        try {
+            ProductionResponseDto response = restClientConfig.restClient().get()
+                    .uri(url)
+                    .retrieve()
+                    .body(ProductionResponseDto.class);
+
+            long duration = System.currentTimeMillis() - startTime;
+
+            if (response != null && response.getValue() != null) {
+                log.debug("Заказ {}: получено {} записей за {} мс",
+                        customerOrderKeys, response.getValue().size(), duration);
+            } else {
+                log.debug("Заказ {}: получен пустой ответ за {} мс", customerOrderKeys, duration);
+            }
+
+            return response;
+
+        } catch (Exception e) {
+            log.error("Ошибка при получении Производств для заказа {}: {}",
+                    customerOrderKeys, e.getMessage());
+            throw new RuntimeException("Ошибка получения данных из 1С", e);
+        }
+    }
+
     private ProductionResponseDto getResponse(
             UUID organizationId,
             Integer top,

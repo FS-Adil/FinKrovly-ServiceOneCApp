@@ -19,6 +19,7 @@ import com.example.serviceonec.repository.expend.ExpendRepository;
 import com.example.serviceonec.repository.expend.ExpendStocksRepository;
 import com.example.serviceonec.repository.invoice.InvoiceRepository;
 import com.example.serviceonec.repository.invoice.InvoiceStocksRepository;
+import com.example.serviceonec.service.costprice.structure.production.CostPriceStructureProduction;
 import com.example.serviceonec.service.expend.ExpendStocksService;
 import com.example.serviceonec.service.invoice.InvoiceStocksService;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +56,8 @@ public class CostPriceServiceImpl implements CostPriceService {
 
     private final ExpendStocksService expendStocksService;
     private final InvoiceStocksService invoiceStocksService;
+
+    private final CostPriceStructureProduction costPriceStructureProduction;
 
     @Override
     public List<CostPriceControllerOutput> getAllCostPrice(
