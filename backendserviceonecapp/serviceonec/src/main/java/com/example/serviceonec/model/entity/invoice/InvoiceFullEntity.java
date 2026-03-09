@@ -1,4 +1,4 @@
-package com.example.serviceonec.model.entity.expend;
+package com.example.serviceonec.model.entity.invoice;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -14,8 +14,8 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor  // <-- Добавьте эту аннотацию
 @AllArgsConstructor // <-- Добавьте эту аннотацию (нужна для @Builder)
-@Table(name = "expend_full")
-public class ExpendFullEntity {
+@Table(name = "invoice_full")
+public class InvoiceFullEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,4 +63,5 @@ public class ExpendFullEntity {
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
 }

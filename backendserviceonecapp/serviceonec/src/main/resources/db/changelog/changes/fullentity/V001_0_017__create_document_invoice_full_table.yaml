@@ -1,11 +1,11 @@
 databaseChangeLog:
   - changeSet:
-      id: V001_0_016__create_document_expend_full_table
+      id: V001_0_017__create_document_invoice_full_table
       author: adilhan
       changes:
         - createTable:
-            tableName: expend_full
-            remarks: "Таблица расходов"
+            tableName: invoice_full
+            remarks: Таблица для хранения полной информации о счетах
             columns:
               - column:
                   name: id
@@ -14,101 +14,101 @@ databaseChangeLog:
                   constraints:
                     primaryKey: true
                     nullable: false
-                  remarks: "Первичный ключ"
+                  remarks: Уникальный идентификатор записи
 
               - column:
                   name: date
                   type: TIMESTAMP
                   constraints:
                     nullable: false
-                  remarks: "Дата"
+                  remarks: Дата документа
 
               - column:
                   name: document_type
                   type: VARCHAR(255)
                   constraints:
                     nullable: false
-                  remarks: "Тип документа"
+                  remarks: Тип документа
 
               - column:
                   name: document_type_one_c
                   type: VARCHAR(255)
                   constraints:
                     nullable: false
-                  remarks: "Тип документа (1С)"
+                  remarks: Тип документа из 1С
 
               - column:
                   name: number
                   type: VARCHAR(255)
                   constraints:
                     nullable: false
-                  remarks: "Номер документа"
+                  remarks: Номер документа
 
               - column:
                   name: ref_key
                   type: UUID
                   constraints:
                     nullable: false
-                  remarks: "Ключ ссылки"
+                  remarks: Ключ ссылки
 
               - column:
                   name: organization_key
                   type: UUID
                   constraints:
                     nullable: false
-                  remarks: "Ключ организации"
+                  remarks: Ключ организации
 
               - column:
                   name: structural_unit_key
                   type: UUID
                   constraints:
                     nullable: false
-                  remarks: "Ключ структурного подразделения"
+                  remarks: Ключ структурной единицы
 
               - column:
                   name: customer_order
                   type: UUID
                   constraints:
                     nullable: false
-                  remarks: "Заказ клиента"
+                  remarks: Ключ заказа клиента
 
               - column:
                   name: nomenclature_key
                   type: UUID
                   constraints:
                     nullable: false
-                  remarks: "Ключ номенклатуры"
+                  remarks: Ключ номенклатуры
 
               - column:
                   name: characteristic_key
                   type: UUID
                   constraints:
                     nullable: false
-                  remarks: "Ключ характеристики"
+                  remarks: Ключ характеристики
 
               - column:
                   name: batch_key
                   type: UUID
                   constraints:
                     nullable: false
-                  remarks: "Ключ партии"
+                  remarks: Ключ партии
 
               - column:
                   name: quantity
                   type: DECIMAL(19, 2)
                   constraints:
                     nullable: false
-                  remarks: "Количество"
+                  remarks: Количество
 
               - column:
                   name: price
                   type: DECIMAL(19, 2)
                   constraints:
                     nullable: false
-                  remarks: "Цена"
+                  remarks: Цена
 
               - column:
                   name: created_at
                   type: TIMESTAMP
                   defaultValueComputed: CURRENT_TIMESTAMP
-                  remarks: "Дата создания записи"
+                  remarks: Дата создания записи

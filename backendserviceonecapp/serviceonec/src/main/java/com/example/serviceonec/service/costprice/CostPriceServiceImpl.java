@@ -3,14 +3,13 @@ package com.example.serviceonec.service.costprice;
 import com.example.serviceonec.config.OneCProperties;
 import com.example.serviceonec.config.RestClientConfig;
 import com.example.serviceonec.controller.costprice.output.CostPriceControllerOutput;
-import com.example.serviceonec.model.dto.response.costprice.RemainingItemStockResponseDto;
-import com.example.serviceonec.model.dto.response.costprice.RemainingStockResponseDto;
+import com.example.serviceonec.model.dto.response.remaining.RemainingItemStockResponseDto;
+import com.example.serviceonec.model.dto.response.remaining.RemainingStockResponseDto;
 import com.example.serviceonec.model.entity.BatchEntity;
 import com.example.serviceonec.model.entity.CharacteristicEntity;
 import com.example.serviceonec.model.entity.NomenclatureEntity;
 import com.example.serviceonec.model.entity.expend.ExpendEntity;
 import com.example.serviceonec.model.entity.expend.ExpendStocksEntity;
-import com.example.serviceonec.model.entity.invoice.InvoiceEntity;
 import com.example.serviceonec.model.entity.invoice.InvoiceStocksEntity;
 import com.example.serviceonec.repository.BatchRepository;
 import com.example.serviceonec.repository.CharacteristicRepository;
@@ -19,7 +18,6 @@ import com.example.serviceonec.repository.expend.ExpendRepository;
 import com.example.serviceonec.repository.expend.ExpendStocksRepository;
 import com.example.serviceonec.repository.invoice.InvoiceRepository;
 import com.example.serviceonec.repository.invoice.InvoiceStocksRepository;
-import com.example.serviceonec.service.costprice.structure.production.CostPriceStructureProduction;
 import com.example.serviceonec.service.expend.ExpendStocksService;
 import com.example.serviceonec.service.invoice.InvoiceStocksService;
 import lombok.RequiredArgsConstructor;
@@ -56,8 +54,6 @@ public class CostPriceServiceImpl implements CostPriceService {
 
     private final ExpendStocksService expendStocksService;
     private final InvoiceStocksService invoiceStocksService;
-
-    private final CostPriceStructureProduction costPriceStructureProduction;
 
     @Override
     public List<CostPriceControllerOutput> getAllCostPrice(
