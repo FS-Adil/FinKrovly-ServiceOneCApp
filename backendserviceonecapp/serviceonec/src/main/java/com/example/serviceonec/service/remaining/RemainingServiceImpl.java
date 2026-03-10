@@ -34,10 +34,13 @@ public class RemainingServiceImpl implements RemainingService{
 
         long startTime = System.currentTimeMillis();
 
+        List<RemainingEntity> remainingEntities = new ArrayList<>();
+
+        remainingRepository.deleteAll();
+        log.info("✓ Таблица remaining_stocks очищена");
+
         RemainingStockResponseDto remainingStockResponseDto = getResponse(organizationId, endDate);
         List<RemainingItemStockResponseDto> entities = remainingStockResponseDto.getValue();
-
-        List<RemainingEntity> remainingEntities = new ArrayList<>();
 
         log.debug("Получено {} записей остатков из 1С", entities.size());
 

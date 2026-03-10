@@ -108,6 +108,9 @@ public class InvoiceFullService {
     public void fillInvoiceFullEntity () {
         List<InvoiceFullEntity> invoiceFullEntities = new ArrayList<>();
 
+        invoiceFullRepository.deleteAll();
+        log.info("Очишаем таблицу invoice_full");
+
         AtomicInteger processedExpend = new AtomicInteger(0);
         AtomicInteger processedStocks = new AtomicInteger(0);
 

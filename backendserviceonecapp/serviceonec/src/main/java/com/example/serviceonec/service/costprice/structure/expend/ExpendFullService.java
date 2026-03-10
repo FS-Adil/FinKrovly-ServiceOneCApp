@@ -98,6 +98,9 @@ public class ExpendFullService {
     public void fillExpendFullEntity() {
         List<ExpendFullEntity> expendFullEntities = new ArrayList<>();
 
+        expendFullRepository.deleteAll();
+        log.info("✓ Таблицу expend_full очищена");
+
         AtomicInteger processedExpend = new AtomicInteger(0);
         AtomicInteger processedStocks = new AtomicInteger(0);
 
