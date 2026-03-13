@@ -12,6 +12,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,8 +35,10 @@ public class ExpendServiceImpl implements ExpendService {
     private final ExpendMapper expendMapper;
 
     private static final int BATCH_SIZE = 500;
-    private static final int MAX_CONCURRENT_REQUESTS = 10;
-    private static final int REQUEST_DELAY_MS = 20;
+    private static final int MAX_CONCURRENT_REQUESTS = 5;
+    private static final int REQUEST_DELAY_MS = 50;
+    private static final int REQUEST_TIMEOUT_SECONDS = 60;
+    private static final int MAX_EMPTY_BATCHES = 3;
 
     @Override
     public Page<ExpendEntity> getAllExpend(
@@ -55,10 +59,12 @@ public class ExpendServiceImpl implements ExpendService {
         expendRepository.deleteAll();
         log.info("Таблица очищена");
 
-        AtomicBoolean hasMoreData = new AtomicBoolean(true);
+        AtomicBoolean hasError = new AtomicBoolean(false);
+        AtomicBoolean shouldContinue = new AtomicBoolean(true);
         int skip = 0;
         AtomicLong totalRecordsLoaded = new AtomicLong(0);
         AtomicInteger batchCounter = new AtomicInteger(0);
+        AtomicInteger consecutiveEmptyBatches = new AtomicInteger(0);
 
         // Создаем пул потоков для параллельных запросов
         ExecutorService executorService = Executors.newFixedThreadPool(MAX_CONCURRENT_REQUESTS);
@@ -70,12 +76,21 @@ public class ExpendServiceImpl implements ExpendService {
         long startTime = System.currentTimeMillis();
 
         try {
-            while (hasMoreData.get()) {
+            while (shouldContinue.get() && !hasError.get()) {
+                // Проверка на слишком много пустых батчей подряд
+                if (consecutiveEmptyBatches.get() >= MAX_EMPTY_BATCHES) {
+                    log.info("Получено {} пустых батчей подряд. Завершаем загрузку.", MAX_EMPTY_BATCHES);
+                    break;
+                }
+
                 List<CompletableFuture<Void>> futures = new ArrayList<>();
                 int currentBatch = batchCounter.incrementAndGet();
 
                 log.info("--- ПАРТИЯ #{}: запуск {} параллельных запросов ---",
                         currentBatch, MAX_CONCURRENT_REQUESTS);
+
+                // Используем AtomicBoolean для отслеживания наличия данных в батче
+                AtomicBoolean batchHasData = new AtomicBoolean(false);
 
                 // Запускаем MAX_CONCURRENT_REQUESTS параллельных запросов
                 for (int i = 0; i < MAX_CONCURRENT_REQUESTS; i++) {
@@ -102,20 +117,39 @@ public class ExpendServiceImpl implements ExpendService {
                                             currentSkip
                                     );
 
-                                    List<ExpendItemResponseDto> items = expendResponseDto.getValue();
+                                    List<ExpendItemResponseDto> items = expendResponseDto != null ?
+                                            expendResponseDto.getValue() : new ArrayList<>();
+
                                     long requestTime = System.currentTimeMillis() - requestStartTime;
 
                                     if (!items.isEmpty()) {
                                         log.info("[Поток: {}] Запрос #{}.{} УСПЕШНО: получено {} записей (skip={}) за {} мс",
                                                 threadName, currentBatch, requestNumber, items.size(), currentSkip, requestTime);
+
+                                        // Отмечаем, что в батче есть данные
+                                        batchHasData.set(true);
+
                                         return items;
                                     } else {
-                                        log.info("[Поток: {}] Запрос #{}.{} ЗАВЕРШЕН: данных нет (skip={}) за {} мс",
+                                        log.info("[Поток: {}] Запрос #{}.{}: данных нет (skip={}) за {} мс",
                                                 threadName, currentBatch, requestNumber, currentSkip, requestTime);
-                                        hasMoreData.set(false);
                                         return new ArrayList<ExpendItemResponseDto>();
                                     }
 
+                                } catch (HttpClientErrorException.NotFound e) {
+                                    // 404 - данные закончились
+                                    log.info("[Поток: {}] Запрос #{}.{}: данные закончились (404) skip={}",
+                                            threadName, currentBatch, requestNumber, currentSkip);
+                                    return new ArrayList<ExpendItemResponseDto>();
+                                } catch (HttpClientErrorException e) {
+                                    log.error("[Поток: {}] Запрос #{}.{} HTTP ошибка {}: skip={}, ошибка: {}",
+                                            threadName, currentBatch, requestNumber,
+                                            e.getStatusCode(), currentSkip, e.getMessage());
+                                    throw new CompletionException(e);
+                                } catch (ResourceAccessException e) {
+                                    log.error("[Поток: {}] Запрос #{}.{} ТАЙМАУТ: skip={}, ошибка: {}",
+                                            threadName, currentBatch, requestNumber, currentSkip, e.getMessage());
+                                    throw new CompletionException(e);
                                 } catch (Exception e) {
                                     log.error("[Поток: {}] Запрос #{}.{} ОШИБКА: skip={}, ошибка: {}",
                                             threadName, currentBatch, requestNumber, currentSkip, e.getMessage());
@@ -129,11 +163,15 @@ public class ExpendServiceImpl implements ExpendService {
                                 if (!items.isEmpty()) {
                                     long saveStartTime = System.currentTimeMillis();
                                     try {
-                                        int savedCount = 0;
+                                        List<ExpendEntity> entities = new ArrayList<>();
                                         for (ExpendItemResponseDto value : items) {
-                                            expendRepository.save(expendMapper.toEntity(value));
-                                            savedCount++;
+                                            entities.add(expendMapper.toEntity(value));
                                         }
+
+                                        // Сохраняем батчем для производительности
+                                        expendRepository.saveAll(entities);
+                                        int savedCount = entities.size();
+
                                         totalRecordsLoaded.addAndGet(savedCount);
 
                                         long saveTime = System.currentTimeMillis() - saveStartTime;
@@ -144,6 +182,12 @@ public class ExpendServiceImpl implements ExpendService {
                                         log.error("❌ Ошибка целостности данных при сохранении: {}", e.getMessage());
                                     }
                                 }
+                            })
+                            .exceptionally(throwable -> {
+                                log.error("❌ Необработанная ошибка в запросе #{}.{}: {}",
+                                        currentBatch, requestNumber, throwable.getMessage());
+                                hasError.set(true);
+                                return null;
                             });
 
                     futures.add(future);
@@ -163,31 +207,56 @@ public class ExpendServiceImpl implements ExpendService {
                 );
 
                 try {
-                    allFutures.get(30, TimeUnit.SECONDS);
-                    log.info("✅ ПАРТИЯ #{} полностью завершена", currentBatch);
+                    allFutures.get(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+                    // Проверяем, были ли данные в этой партии
+                    if (!batchHasData.get()) {
+                        consecutiveEmptyBatches.incrementAndGet();
+                        log.info("⚠️ ПАРТИЯ #{} не содержит данных. Пустых батчей подряд: {}",
+                                currentBatch, consecutiveEmptyBatches.get());
+                    } else {
+                        consecutiveEmptyBatches.set(0);
+                        log.info("✅ ПАРТИЯ #{} полностью завершена, получены данные", currentBatch);
+                    }
+
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     log.error("❌ Ошибка при выполнении партии #{}: {}", currentBatch, e.getMessage());
+                    hasError.set(true);
+
                     // Отменяем незавершенные задачи
                     futures.forEach(f -> f.cancel(true));
+
+                    // Если ошибка - прекращаем выполнение
+                    break;
+                }
+
+                // Небольшая пауза между батчами
+                try {
+                    TimeUnit.MILLISECONDS.sleep(200);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
 
             // Ждем завершения всех оставшихся задач
             log.info("Ожидание завершения всех задач...");
-            while (activeTasks.get() > 0) {
+            int waitAttempts = 0;
+            while (activeTasks.get() > 0 && waitAttempts < 30) {
                 log.debug("Активных задач: {}", activeTasks.get());
                 TimeUnit.MILLISECONDS.sleep(100);
+                waitAttempts++;
             }
 
         } catch (InterruptedException e) {
             log.error("❌ Ошибка при ожидании завершения задач: {}", e.getMessage());
-            throw new RuntimeException(e);
+            Thread.currentThread().interrupt();
         } finally {
             long totalTime = System.currentTimeMillis() - startTime;
 
             executorService.shutdown();
             try {
-                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
                     log.warn("Принудительное завершение потоков");
                     executorService.shutdownNow();
                 }
@@ -197,17 +266,22 @@ public class ExpendServiceImpl implements ExpendService {
             }
 
             log.info("===== ЗАВЕРШЕНИЕ ЗАГРУЗКИ =====");
+            if (hasError.get()) {
+                log.error("❌ Загрузка завершилась с ошибками");
+            }
             log.info("✅ Всего загружено записей: {}", totalRecordsLoaded.get());
             log.info("⏱️ Общее время выполнения: {} мс ({} сек)", totalTime, totalTime / 1000);
-            log.info("📊 Средняя скорость: {} записей/сек",
-                    totalRecordsLoaded.get() / (totalTime / 1000 > 0 ? totalTime / 1000 : 1));
+            if (totalTime > 0) {
+                log.info("📊 Средняя скорость: {} записей/сек",
+                        totalRecordsLoaded.get() / (totalTime / 1000));
+            }
         }
 
-        log.info("------> Все расходники из 1с за период с {} по {} найдены и сохранены в базу",
-                startDate, endDate);
+        log.info("------> Все расходники из 1с за период с {} по {} обработаны", startDate, endDate);
 
         Page<ExpendEntity> result = expendRepository.findAll(PageRequest.of(0, 10));
-        log.info("📄 Возвращаем первые {} записей из {} всего", result.getNumberOfElements(), result.getTotalElements());
+        log.info("📄 Возвращаем первые {} записей из {} всего",
+                result.getNumberOfElements(), result.getTotalElements());
 
         return result;
     }
@@ -230,7 +304,7 @@ public class ExpendServiceImpl implements ExpendService {
                 "$orderby=Date desc&" +
                 "$format=json", top, skip);
 
-        log.debug("URL запроса: {}", url.replaceAll("['\"]", "")); // Без кавычек для читаемости
+        log.debug("URL запроса: {}", url.replaceAll("['\"]", ""));
 
         try {
             ExpendResponseDto response = restClientConfig.restClient().get()
@@ -238,8 +312,17 @@ public class ExpendServiceImpl implements ExpendService {
                     .retrieve()
                     .body(ExpendResponseDto.class);
 
+            if (response == null) {
+                log.warn("Получен пустой ответ от 1С для skip={}", skip);
+                return new ExpendResponseDto();
+            }
+
             return response;
 
+        } catch (HttpClientErrorException.NotFound e) {
+            // 404 - это нормально, значит данные закончились
+            log.debug("Данные закончились (404) для skip={}", skip);
+            throw e;
         } catch (Exception e) {
             log.error("Ошибка при получении Расходных накладных с skip={}: {}", skip, e.getMessage());
             throw new RuntimeException("Ошибка получения данных из 1С", e);

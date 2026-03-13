@@ -23,6 +23,7 @@ import com.example.serviceonec.repository.production.ProductionRepository;
 import com.example.serviceonec.repository.remaining.RemainingRepository;
 import com.example.serviceonec.repository.resultingincome.ResultingIncomeFullRepository;
 import com.example.serviceonec.repository.specification.SpecificationRepository;
+import com.example.serviceonec.service.production.ProductionAdditiveService;
 import com.example.serviceonec.service.production.ProductionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 public class ProductionFullService {
 
     private final ProductionService productionService;
+    private final ProductionAdditiveService productionAdditiveService;
 
     private final ExpendRepository expendRepository;
     private final ProductionRepository productionRepository;
@@ -83,6 +85,12 @@ public class ProductionFullService {
             LocalDateTime dateTo
     ) {
         productionService.getAllProduction(
+                organizationId,
+                dateFrom,
+                dateTo
+        );
+
+        productionAdditiveService.getAllProduction(
                 organizationId,
                 dateFrom,
                 dateTo
@@ -216,7 +224,35 @@ public class ProductionFullService {
     }
 
     public void calculationStageThree() {
+        log.info(" Этап 3 -> Расчет производства - Загрузка приходных накладных...");
+        this.resultingIncomeFullMap = createAllResultingIncomeFullEntity();
+        log.info(" Этап 3 -> Расчет производства - Загрузка остатков...");
+        createMapForRemainingStocks();
+        log.info(" Этап 3 -> Расчет производства - Обновляем приходные накладные исходя из остатков...");
+        updateMapForResultingIncomeFull("Этап 3");
 
+        List<UUID> refKeys = this.productionFullEntities.stream()
+                .filter(entity -> entity.getPrice() != null && entity.getPrice().compareTo(BigDecimal.ZERO) == 0)
+                .map(ProductionFullEntity::getRefKey)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        for (ProductionFullEntity productionFullEntities : this.productionFullEntities) {
+            BigDecimal price = productionFullEntities.getPrice();
+
+            if (price.compareTo(BigDecimal.ZERO) == 0) {
+                log.debug("❌ У данной номенклатуры нет себестоимости: {} ❌", nomenclatureMap.get(productionFullEntities.getNomenclatureKey()));
+            }
+        }
+
+        //Получаем распределение запасов
+        List<ProductionDistributionStocksEntity> productionDistributionStocksEntityList =
+                productionDistributionStocksRepository.findAllByRefKeyIn(refKeys);
+
+        calculation(productionDistributionStocksEntityList);
+
+        fillProductionFullEntity("Этап 3");
     }
 
     private void fillProductionFullEntity(String string) {
@@ -590,7 +626,7 @@ public class ProductionFullService {
 
         if (resultingIncomeFullEntityList.isEmpty()) {
             log.warn("⚠️ Не найдено данных в таблице resulting_income_full");
-            return null;
+            return new HashMap<>();
         }
 
         log.debug("Загружено {} записей запасов из БД", resultingIncomeFullEntityList.size());
@@ -646,7 +682,7 @@ public class ProductionFullService {
 
             // Добавляем проверку на null для quantitySpecification
             if (quantitySpecification == null) {
-                log.error("❌ quantitySpecification = null для номенклатуры: {} <-> со спецификацией {}", itemName, itemSpecification);
+                log.debug("❌ quantitySpecification = null для номенклатуры: {} <-> со спецификацией {}", itemName, itemSpecification);
                 quantitySpecification = BigDecimal.ONE; // или другое значение по умолчанию
                 // или выбросить исключение, если это критично
                 // throw new IllegalArgumentException("quantitySpecification cannot be null");
@@ -661,13 +697,13 @@ public class ProductionFullService {
             if (stocksList == null || stocksList.isEmpty()) {
                 log.error("❌ Список материалов с ref_key {} и ключом {} пуст или не найден", refKey, linkKey);
                 // Обработайте ситуацию
-                continue;
+//                continue;
             }
 
             if (stocksList.size() > 1) {
-                log.error("❌ Список материалов с ref_key {} и ключом {} имеет больше 2 значений", refKey, linkKey);
+                log.debug("❌ Список материалов с ref_key {} и ключом {} имеет больше 2 значений", refKey, linkKey);
                 // Обработайте ситуацию
-                continue;
+//                continue;
             }
 
             BigDecimal stocksQuantity = entity.getQuantity();

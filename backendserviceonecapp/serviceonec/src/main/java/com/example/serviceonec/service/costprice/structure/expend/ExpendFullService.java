@@ -132,7 +132,8 @@ public class ExpendFullService {
                 UUID batchKey = expendStocksEntity.getBatchKey();
 
                 String number = expend.getNumber();
-                BigDecimal price = expendStocksEntity.getPrice().setScale(3, RoundingMode.HALF_UP);;
+                BigDecimal price = expendStocksEntity.getSum().divide(expendStocksEntity.getQuantity(), 3, RoundingMode.HALF_UP);
+//                BigDecimal price = expendStocksEntity.getPrice().setScale(3, RoundingMode.HALF_UP);
                 BigDecimal quantity = expendStocksEntity.getQuantity().setScale(3, RoundingMode.HALF_UP);
 
 

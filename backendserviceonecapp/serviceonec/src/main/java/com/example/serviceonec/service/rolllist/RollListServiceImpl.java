@@ -61,10 +61,10 @@ public class RollListServiceImpl implements RollListService {
                         NomenclatureEntity nomenclature = nomenclatureRepository.findByRefKey(item.getNomenclatureKey());
                         if (nomenclature != null) {
                             nomenclatureName = nomenclature.getDescription();
-                        } else log.info("Номенкулатура {} не найдена", item.getNomenclatureKey());
+                        } else log.debug("Номенкулатура {} не найдена", item.getNomenclatureKey());
                     } catch (Exception e) {
                         // Логирование или обработка ошибки
-                        log.info("Ошибка при получении номенклатуры: {}", e.getMessage());
+                        log.error("Ошибка при получении номенклатуры: {}", e.getMessage());
                         nomenclatureName = "Не найдено";
                     }
 
@@ -72,9 +72,9 @@ public class RollListServiceImpl implements RollListService {
                         CharacteristicEntity characteristic = characteristicRepository.findByRefKey(item.getCharacteristicKey());
                         if (characteristic != null) {
                             characteristicName = characteristic.getDescription();
-                        } else log.info("Характеристика {} не найдена", item.getCharacteristicKey());
+                        } else log.debug("Характеристика {} не найдена", item.getCharacteristicKey());
                     } catch (Exception e) {
-                        log.info("Ошибка при получении характеристики: {}", e.getMessage());
+                        log.error("Ошибка при получении характеристики: {}", e.getMessage());
                         characteristicName = "Не найдено";
                     }
 
@@ -82,9 +82,9 @@ public class RollListServiceImpl implements RollListService {
                         BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
                         if (batch != null) {
                             batchName = batch.getDescription();
-                        } else log.info("Партия {} не найдена", item.getBatchKey());
+                        } else log.debug("Партия {} не найдена", item.getBatchKey());
                     } catch (Exception e) {
-                        log.info("Ошибка при получении партии: {}", e.getMessage());
+                        log.error("Ошибка при получении партии: {}", e.getMessage());
                         batchName = "Не найдено";
                     }
 
@@ -94,7 +94,7 @@ public class RollListServiceImpl implements RollListService {
                             batchWeight = batch.getWeight();
                         }
                     } catch (Exception e) {
-                        log.info("Ошибка при получении Веса рулона по партии: {}", e.getMessage());
+                        log.error("Ошибка при получении Веса рулона по партии: {}", e.getMessage());
                         batchWeight = BigDecimal.valueOf(0.00);
                     }
 
@@ -104,7 +104,7 @@ public class RollListServiceImpl implements RollListService {
                             batchLength = batch.getLength();
                         }
                     } catch (Exception e) {
-                        log.info("Ошибка при получении Длины рулона по партии: {}", e.getMessage());
+                        log.error("Ошибка при получении Длины рулона по партии: {}", e.getMessage());
                         batchLength = BigDecimal.valueOf(0.00);
                     }
 

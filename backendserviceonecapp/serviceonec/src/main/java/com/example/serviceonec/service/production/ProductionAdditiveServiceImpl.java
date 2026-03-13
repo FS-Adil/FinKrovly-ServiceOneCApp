@@ -1,8 +1,6 @@
 package com.example.serviceonec.service.production;
 
 import com.example.serviceonec.config.RestClientConfig;
-import com.example.serviceonec.model.dto.response.inventory.InventoryItemResponseDto;
-import com.example.serviceonec.model.dto.response.inventory.InventoryResponseDto;
 import com.example.serviceonec.model.dto.response.production.ProductionItemResponseDto;
 import com.example.serviceonec.model.dto.response.production.ProductionResponseDto;
 import com.example.serviceonec.model.entity.production.ProductionEntity;
@@ -33,11 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ProductionServiceImpl implements ProductionService {
-
+public class ProductionAdditiveServiceImpl implements ProductionAdditiveService {
     private final RestClientConfig restClientConfig;
 
     private final ProductionRepository productionRepository;
@@ -53,6 +51,7 @@ public class ProductionServiceImpl implements ProductionService {
     private static final int BATCH_SIZE = 500;
     private static final int MAX_CONCURRENT_REQUESTS = 5;
     private static final int REQUEST_DELAY_MS = 20;
+    private static final int MINUS_MONTHS = 6;
 
     @Override
     public Page<ProductionEntity> getAllProduction(
@@ -61,30 +60,12 @@ public class ProductionServiceImpl implements ProductionService {
             LocalDateTime endDate
     ) {
 
-        log.info("===== НАЧАЛО ЗАГРУЗКИ ПРОИЗВОДСТВ =====");
+        log.info("===== НАЧАЛО ЗАГРУЗКИ ПРОИЗВОДСТВ БЕЗ ЗАКАЗА ПОКУПАТЕЛЯ =====");
         log.info("Организация ID: {}", organizationId);
         log.info("Период: {} - {}",
-                startDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                endDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                startDate.minusMonths(MINUS_MONTHS).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                startDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         log.info("Параметры загрузки: batchSize={}, maxConcurrentRequests={}", BATCH_SIZE, MAX_CONCURRENT_REQUESTS);
-
-        // Очистка таблиц перед загрузкой
-        log.info("Очистка таблиц производств...");
-        long cleanupStart = System.currentTimeMillis();
-
-        productionDistributionStocksRepository.deleteAll();
-        log.info("✓ Таблица production_distribution_stocks очищена");
-
-        productionItemsRepository.deleteAll();
-        log.info("✓ Таблица production_items очищена");
-
-        productionStocksRepository.deleteAll();
-        log.info("✓ Таблица production_stocks очищена");
-
-        productionRepository.deleteAll();
-        log.info("✓ Таблица productions очищена");
-
-        log.info("Очистка таблиц завершена за {} мс", System.currentTimeMillis() - cleanupStart);
 
         AtomicBoolean hasMoreData = new AtomicBoolean(true);
         int skip = 0;
@@ -295,7 +276,7 @@ public class ProductionServiceImpl implements ProductionService {
                 Thread.currentThread().interrupt();
             }
 
-            log.info("===== ЗАВЕРШЕНИЕ ЗАГРУЗКИ ПРОИЗВОДСТВ =====");
+            log.info("===== ЗАВЕРШЕНИЕ ЗАГРУЗКИ ПРОИЗВОДСТВ БЕЗ ЗАКАЗОВ ПОКУПАТЕЛЯ =====");
             log.info("✅ ИТОГОВАЯ СТАТИСТИКА:");
             log.info("   📄 Документов производств: {}", totalDocumentsLoaded.get());
             log.info("   📦 Запасов: {}", totalStocksLoaded.get());
@@ -317,8 +298,8 @@ public class ProductionServiceImpl implements ProductionService {
             }
         }
 
-        log.info("------> Все Производства из 1с за период с {} по {} найдены и сохранены в базу",
-                startDate, endDate);
+        log.info("------> Все Производства без заказа покупателя из 1с за период с {} по {} найдены и сохранены в базу",
+                startDate.minusMonths(MINUS_MONTHS), startDate);
 
         Page<ProductionEntity> result = productionRepository.findAll(PageRequest.of(0, 10));
         log.info("📄 Возвращаем первые {} записей производств из {} всего",
@@ -445,25 +426,25 @@ public class ProductionServiceImpl implements ProductionService {
 
                 if (productionResponseDto != null && productionResponseDto.getValue() != null) {
                     int itemsCount = productionResponseDto.getValue().size();
-                    log.debug("[Поток {}] Заказ {}: найдено {} производственных документов",
+                    log.info("[Поток {}] Заказ {}: найдено {} производственных документов",
                             threadNumber, uuid, itemsCount);
 
                     if (itemsCount > 0) {
                         processProductionItems(productionResponseDto.getValue(), threadNumber, uuid);
                         successInThread++;
                         totalSuccess.incrementAndGet();
-                        log.debug("[Поток {}] ✅ Заказ {} успешно обработан ({} документов)",
+                        log.info("[Поток {}] ✅ Заказ {} успешно обработан ({} документов)",
                                 threadNumber, uuid, itemsCount);
                     } else {
                         skippedInThread++;
                         totalSkipped.incrementAndGet();
-                        log.debug("[Поток {}] ⏭️ Заказ {}: нет производственных документов (пропущен)",
+                        log.info("[Поток {}] ⏭️ Заказ {}: нет производственных документов (пропущен)",
                                 threadNumber, uuid);
                     }
                 } else {
                     skippedInThread++;
                     totalSkipped.incrementAndGet();
-                    log.debug("[Поток {}] ⏭️ Заказ {}: нет данных от 1С (пропущен)", threadNumber, uuid);
+                    log.info("[Поток {}] ⏭️ Заказ {}: нет данных от 1С (пропущен)", threadNumber, uuid);
                 }
 
             } catch (Exception e) {
@@ -596,6 +577,7 @@ public class ProductionServiceImpl implements ProductionService {
     ) {
         String url = String.format("/Document_СборкаЗапасов?" +
                         "$filter=Posted eq true" +
+                        " and ЗаказПокупателя_Key eq guid'%s'" +
                         " and Организация_Key eq guid'%s'" +
                         " and Date ge datetime'%s'" +
                         " and Date le datetime'%s'" +
@@ -604,9 +586,10 @@ public class ProductionServiceImpl implements ProductionService {
                         "$orderby=Date desc&" +
                         "$top=%d&$skip=%d&" +
                         "$format=json",
+                "00000000-0000-0000-0000-000000000000",
                 organizationId,
+                startDate.minusMonths(MINUS_MONTHS),
                 startDate,
-                endDate,
                 top,
                 skip);
 

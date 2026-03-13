@@ -96,13 +96,14 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
             resultingIncomeFullService.addResultingIncomeFullTable();
         log.info("📥 Шаг 4.5/7: Этап 2 Расчет себестоимости по производству исходя из приходных накладных и остатков в организации");
         productionFullService.calculationStageTwo();
+            log.info("📥 Шаг 4.5.1/7: Cобираем таблицу ПРИХОДОВ в одну (Приходная накладная от поставщика + Производство) и сортируем по дате");
+            resultingIncomeFullService.addResultingIncomeFullTable();
         log.info("📥 Шаг 4.6/7: Этап 3 Расчет себестоимости по производству исходя из приходных накладных и остатков в организации");
         productionFullService.calculationStageThree();
         log.info("✅ Сформировано ProductionFullEntity за {} мс ", System.currentTimeMillis() - stepStart);
 
         // Шаг 5:
-        // Выравниваем ПРИХОД относительно РАСХОДОВ:
-        // собираем таблицу ПРИХОДОВ в одну (Приходная накладная от поставщика + Производство) и сортируем по дате
+        // Собираем таблицу ПРИХОДОВ в одну (Приходная накладная от поставщика + Производство) и сортируем по дате
         stepStart = System.currentTimeMillis();
         log.info("📥 Шаг 5.1/7: Cобираем таблицу ПРИХОДОВ в одну (Приходная накладная от поставщика + Производство) и сортируем по дате");
         resultingIncomeFullService.addResultingIncomeFullTable();
@@ -148,7 +149,7 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
             return new ArrayList<>();
         }
 
-        log.debug("Начальное количество записей: {}", products.size());
+        log.info("Начальное количество записей: {}", products.size());
 
         Map<String, CostPriceControllerOutput> map = new HashMap<>(products.size());
 
@@ -168,12 +169,14 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
                         .characteristic(productCharacteristic)
                         .batch(productBatch)
                         .quantity(p.getQuantity())
-                        .price(p.getPrice())
-                        .cost(p.getCost())
+                        .price(p.getPrice().multiply(p.getQuantity()))
+                        .cost(p.getCost().multiply(p.getQuantity()))
                         .build()
                 );
             } else {
                 existing.setQuantity(existing.getQuantity().add(p.getQuantity()));
+                existing.setPrice(existing.getPrice().add(p.getPrice().multiply(p.getQuantity())));
+                existing.setCost(existing.getCost().add(p.getCost().multiply(p.getQuantity())));
             }
         }
 

@@ -29,7 +29,7 @@ public class SpecificationServiceImpl implements SpecificationService{
     private final SpecificationMapper specificationMapper;
 
     private static final int PAGE_SIZE = 500; // Размер страницы
-    private static final int THREAD_POOL_SIZE = 10; // Количество потоков
+    private static final int THREAD_POOL_SIZE = 5; // Количество потоков
     private static final int TIMEOUT_MINUTES = 20; // Таймаут
 
     @Override
@@ -83,7 +83,7 @@ public class SpecificationServiceImpl implements SpecificationService{
                                 }
                             });
 
-                            log.info("Страница {} загружена, уникальных записей в мапе: {}", pageNumber, entityMap.size());
+                            log.debug("Страница {} загружена, уникальных записей в мапе: {}", pageNumber, entityMap.size());
 
                         } catch (Exception e) {
                             log.error("Ошибка при загрузке страницы", e);
