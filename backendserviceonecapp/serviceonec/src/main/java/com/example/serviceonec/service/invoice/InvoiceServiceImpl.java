@@ -33,7 +33,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final InvoiceRepository invoiceRepository;
 
     private static final int BATCH_SIZE = 500;
-    private static final int MAX_CONCURRENT_REQUESTS = 10;
+    private static final int MAX_CONCURRENT_REQUESTS = 5;
     private static final int REQUEST_DELAY_MS = 20;
 
     @Override

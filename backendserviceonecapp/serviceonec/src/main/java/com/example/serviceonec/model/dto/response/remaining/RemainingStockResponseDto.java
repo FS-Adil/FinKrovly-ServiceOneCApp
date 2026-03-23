@@ -1,6 +1,5 @@
-package com.example.serviceonec.model.dto.response.costprice;
+package com.example.serviceonec.model.dto.response.remaining;
 
-import com.example.serviceonec.model.dto.response.rolllist.RollListItemResponseDto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 

@@ -39,4 +39,7 @@ public class ExpendStocksEntity extends BaseEntity {
 
     @Column(name = "price", nullable = false)
     private BigDecimal price;
+
+    @Column(name = "sum", nullable = false)
+    private BigDecimal sum;
 }

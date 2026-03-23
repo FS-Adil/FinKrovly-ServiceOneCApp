@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -30,7 +31,12 @@ public class ProductionController {
         LocalDateTime endDate = LocalDateTime.of(2025, 12, 31, 23, 59, 59);
 
 //        Optional<InvoiceResponseDto> invoiceResponseDtoOptional = Optional.ofNullable(invoiceService.getAllInvoice(startDate, endDate));
-        Page<ProductionEntity> productionEntities = productionService.getAllProduction(startDate, endDate);
+        UUID randomUUID = UUID.randomUUID();
+        Page<ProductionEntity> productionEntities = productionService.getAllProduction(
+                randomUUID,
+                startDate,
+                endDate
+        );
 
         if (productionEntities.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "not found");

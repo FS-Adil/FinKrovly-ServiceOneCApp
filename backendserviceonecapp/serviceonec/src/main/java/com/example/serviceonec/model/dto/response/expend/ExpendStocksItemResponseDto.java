@@ -32,4 +32,7 @@ public class ExpendStocksItemResponseDto {
     @JsonProperty("Цена")
     private BigDecimal price;
 
+    @JsonProperty("Сумма")
+    private BigDecimal sum;
+
 }

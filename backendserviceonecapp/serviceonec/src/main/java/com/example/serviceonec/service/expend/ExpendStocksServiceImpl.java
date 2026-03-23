@@ -158,7 +158,7 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
                             long itemsFound = totalItemsFound.addAndGet(entities.size());
 
                             long requestTime = System.currentTimeMillis() - requestStartTime;
-                            log.info("[Поток: {}] ✅ ID {}: найдено {} записей (всего найдено ID: {}, всего записей: {}, время: {} мс)",
+                            log.debug("[Поток: {}] ✅ ID {}: найдено {} записей (всего найдено ID: {}, всего записей: {}, время: {} мс)",
                                     threadName, id, entities.size(), found, itemsFound, requestTime);
                         } else {
                             log.debug("[Поток: {}] ⚠️ ID {}: записи не найдены", threadName, id);
@@ -228,7 +228,7 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
         String url = String.format(
                 "/Document_РасходнаяНакладная_Запасы?" +
                         "$filter=Ref_Key eq guid'%s'&" +
-                        "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                        "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена,Сумма&" +
                         "$format=json", id);
 
         try {
@@ -313,7 +313,7 @@ public class ExpendStocksServiceImpl implements ExpendStocksService {
 
     private ExpendStocksResponseDto getExpendStocks(Integer top, Integer skip) {
         String url = String.format("/Document_РасходнаяНакладная_Запасы?" +
-                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена&" +
+                "$select=Ref_Key,LineNumber,Номенклатура_Key,Характеристика_Key,Партия_Key,Количество,ЕдиницаИзмерения,Цена,Сумма&" +
                 "$top=%s&$skip=%s&" +
                 "$format=json", top, skip);
 

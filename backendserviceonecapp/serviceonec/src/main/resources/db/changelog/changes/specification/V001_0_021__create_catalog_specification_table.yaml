@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: V001_0_021__create_catalog_specification_table
+      author: adilhan
+      changes:
+        - createTable:
+            tableName: specification
+            remarks: Таблица для хранения информации о спецификации
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  remarks: Уникальный идентификатор записи
+
+              - column:
+                  name: ref_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: Ключ ссылки
+
+              - column:
+                  name: quantity
+                  type: DECIMAL(19, 2)
+                  constraints:
+                    nullable: false
+                  remarks: Количество
+
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  remarks: Дата создания записи

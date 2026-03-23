@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: V002_0_021__change_catalog_specification_table
+      author: adilhan
+      changes:
+        - modifyDataType:
+            tableName: specification
+            columnName: quantity
+            newDataType: DECIMAL(19, 4)
+      remarks: Изменение точности количества с 2 до 4 знаков после запятой

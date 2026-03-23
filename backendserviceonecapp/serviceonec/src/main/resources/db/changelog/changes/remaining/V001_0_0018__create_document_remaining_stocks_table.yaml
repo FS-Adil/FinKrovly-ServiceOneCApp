@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: V001_0_0018__create_document_remaining_stocks_table
+      author: adilhan
+      changes:
+        - createTable:
+            tableName: remaining_stocks
+            remarks: Таблица остатков товаров
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  remarks: Уникальный идентификатор записи
+              - column:
+                  name: date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+                  remarks: Дата остатка
+              - column:
+                  name: organization_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: Ключ организации
+              - column:
+                  name: nomenclature_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: Ключ номенклатуры
+              - column:
+                  name: characteristic_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: Ключ характеристики
+              - column:
+                  name: batch_key
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: Ключ партии
+              - column:
+                  name: quantity_balance
+                  type: DECIMAL(19, 2)
+                  constraints:
+                    nullable: false
+                  remarks: Количество остатка
+              - column:
+                  name: amount_balance
+                  type: DECIMAL(19, 2)
+                  remarks: Сумма остатка
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  remarks: Дата создания записи

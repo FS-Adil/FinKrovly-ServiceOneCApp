@@ -202,7 +202,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
                                 long itemsFound = totalItemsFound.addAndGet(entities.size());
 
                                 long requestTime = System.currentTimeMillis() - requestStartTime;
-                                log.info("[Поток: {}] ✅ ID {}: найдено {} записей (всего найдено ID: {}, всего записей: {}, время: {} мс)",
+                                log.debug("[Поток: {}] ✅ ID {}: найдено {} записей (всего найдено ID: {}, всего записей: {}, время: {} мс)",
                                         threadName, id, entities.size(), found, itemsFound, requestTime);
                             } else {
                                 log.debug("[Поток: {}] ⚠️ ID {}: записи не найдены", threadName, id);

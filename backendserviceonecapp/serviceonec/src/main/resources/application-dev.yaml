@@ -38,7 +38,7 @@ spring:
 logging:
   level:
     com.example.serviceonec: INFO                    # Уровень логирования нашего приложения
-    org.springframework.web: INFO
+    org.springframework.web: WARN
     org.hibernate: WARN                        # Hibernate логи только предупреждения и ошибки
     org.hibernate.SQL: WARN                   # SQL логи (только для отладки)
     org.hibernate.type: WARN                  # Логирование параметров (только для отладки)

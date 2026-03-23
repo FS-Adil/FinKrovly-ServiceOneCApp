@@ -1,0 +1,49 @@
+package com.example.serviceonec.model.entity.production;
+
+import com.example.serviceonec.model.entity.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+@Entity
+@Getter
+@Setter
+@Table(name = "production_distribution_stocks")
+public class ProductionDistributionStocksEntity extends BaseEntity {
+
+    @Column(name = "ref_key", nullable = false)
+    private UUID refKey;
+
+    @Column(name = "line_number", nullable = false)
+    private String lineNumber;
+
+    @Column(name = "nomenclature_key")
+    private UUID nomenclatureKey;
+
+    @Column(name = "characteristic_key")
+    private UUID characteristicKey;
+
+    @Column(name = "batch_key")
+    private UUID batchKey;
+
+    @Column(name = "quantity")
+    private BigDecimal quantity;
+
+    @Column(name = "specification_key")
+    private UUID specificationKey;
+
+    @Column(name = "structural_unit_key", nullable = false)
+    private UUID structuralUnitKey;
+
+    @Column(name = "product_link_key")
+    private String productLinkKey;
+
+    @Column(name = "customer_order_key")
+    private UUID customerOrderKey;
+}
