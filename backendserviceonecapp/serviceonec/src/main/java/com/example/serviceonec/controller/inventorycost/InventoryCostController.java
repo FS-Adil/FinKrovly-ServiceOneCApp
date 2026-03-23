@@ -1,7 +1,6 @@
 package com.example.serviceonec.controller.inventorycost;
 
-import com.example.serviceonec.controller.assembly.input.AssemblyExpendControllerInput;
-import com.example.serviceonec.controller.costprice.output.CostPriceControllerOutput;
+import com.example.serviceonec.controller.inventorycost.input.InventoryCostControllerInput;
 import com.example.serviceonec.controller.inventorycost.output.InventoryCostControllerOutput;
 import com.example.serviceonec.service.inventorycost.InventoryCostService;
 import jakarta.validation.Valid;
@@ -27,7 +26,7 @@ public class InventoryCostController {
 
     @PostMapping("/balance-cost")
     public ResponseEntity<List<InventoryCostControllerOutput>> getAllInventory(
-            @Valid @RequestBody AssemblyExpendControllerInput request
+            @Valid @RequestBody InventoryCostControllerInput request
     ) {
 
         List<InventoryCostControllerOutput> list = inventoryCostService.getAllInventoryCost(

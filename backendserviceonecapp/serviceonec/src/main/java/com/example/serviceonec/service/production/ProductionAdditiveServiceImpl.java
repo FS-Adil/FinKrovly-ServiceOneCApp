@@ -51,7 +51,7 @@ public class ProductionAdditiveServiceImpl implements ProductionAdditiveService 
     private static final int BATCH_SIZE = 500;
     private static final int MAX_CONCURRENT_REQUESTS = 5;
     private static final int REQUEST_DELAY_MS = 20;
-    private static final int MINUS_MONTHS = 6;
+    private static final int MINUS_MONTHS = 12;
 
     @Override
     public Page<ProductionEntity> getAllProduction(
