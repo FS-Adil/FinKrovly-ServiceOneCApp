@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface ProductionService {
     Page<ProductionEntity> getAllProduction(UUID organizationId, LocalDateTime startDate, LocalDateTime endDate);
+    Page<ProductionEntity> getAllProductionOld(UUID organizationId, LocalDateTime startDate, LocalDateTime endDate);
     Page<ProductionItemsEntity> getAllProductionItems();
     Page<ProductionStocksEntity> getAllProductionStocks();
     void getAllProductionByCustomerOrders(List<UUID> missingCustomerOrderKeys);

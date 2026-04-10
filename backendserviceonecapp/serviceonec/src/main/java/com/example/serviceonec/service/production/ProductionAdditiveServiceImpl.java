@@ -63,8 +63,8 @@ public class ProductionAdditiveServiceImpl implements ProductionAdditiveService 
         log.info("===== НАЧАЛО ЗАГРУЗКИ ПРОИЗВОДСТВ БЕЗ ЗАКАЗА ПОКУПАТЕЛЯ =====");
         log.info("Организация ID: {}", organizationId);
         log.info("Период: {} - {}",
-                startDate.minusMonths(MINUS_MONTHS).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                startDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                endDate.minusMonths(MINUS_MONTHS).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                endDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         log.info("Параметры загрузки: batchSize={}, maxConcurrentRequests={}", BATCH_SIZE, MAX_CONCURRENT_REQUESTS);
 
         AtomicBoolean hasMoreData = new AtomicBoolean(true);
@@ -299,7 +299,7 @@ public class ProductionAdditiveServiceImpl implements ProductionAdditiveService 
         }
 
         log.info("------> Все Производства без заказа покупателя из 1с за период с {} по {} найдены и сохранены в базу",
-                startDate.minusMonths(MINUS_MONTHS), startDate);
+                endDate.minusMonths(MINUS_MONTHS), endDate);
 
         Page<ProductionEntity> result = productionRepository.findAll(PageRequest.of(0, 10));
         log.info("📄 Возвращаем первые {} записей производств из {} всего",
@@ -588,8 +588,8 @@ public class ProductionAdditiveServiceImpl implements ProductionAdditiveService 
                         "$format=json",
                 "00000000-0000-0000-0000-000000000000",
                 organizationId,
-                startDate.minusMonths(MINUS_MONTHS),
-                startDate,
+                endDate.minusMonths(MINUS_MONTHS),
+                endDate,
                 top,
                 skip);
 

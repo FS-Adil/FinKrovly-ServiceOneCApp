@@ -54,8 +54,39 @@ public class ProductionServiceImpl implements ProductionService {
     private static final int MAX_CONCURRENT_REQUESTS = 5;
     private static final int REQUEST_DELAY_MS = 20;
 
+
     @Override
-    public Page<ProductionEntity> getAllProduction(
+    public Page<ProductionEntity> getAllProduction(UUID organizationId, LocalDateTime startDate, LocalDateTime endDate) {
+        log.info("===== НАЧАЛО ЗАГРУЗКИ ПРОИЗВОДСТВ =====");
+        log.info("Организация ID: {}", organizationId);
+        log.info("Период: {} - {}",
+                startDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                endDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        log.info("Параметры загрузки: batchSize={}, maxConcurrentRequests={}", BATCH_SIZE, MAX_CONCURRENT_REQUESTS);
+
+        // Очистка таблиц перед загрузкой
+        log.info("Очистка таблиц производств...");
+        long cleanupStart = System.currentTimeMillis();
+
+        productionDistributionStocksRepository.deleteAll();
+        log.info("✓ Таблица production_distribution_stocks очищена");
+
+        productionItemsRepository.deleteAll();
+        log.info("✓ Таблица production_items очищена");
+
+        productionStocksRepository.deleteAll();
+        log.info("✓ Таблица production_stocks очищена");
+
+        productionRepository.deleteAll();
+        log.info("✓ Таблица productions очищена");
+
+        log.info("Очистка таблиц завершена за {} мс", System.currentTimeMillis() - cleanupStart);
+
+        return null;
+    }
+
+    @Override
+    public Page<ProductionEntity> getAllProductionOld(
             UUID organizationId,
             LocalDateTime startDate,
             LocalDateTime endDate

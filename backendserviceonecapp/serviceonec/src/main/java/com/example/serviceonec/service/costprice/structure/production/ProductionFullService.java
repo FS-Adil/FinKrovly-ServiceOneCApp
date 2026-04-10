@@ -115,8 +115,58 @@ public class ProductionFullService {
         log.debug("Получено {} уникальных docOrder расходников", docOrders.size());
 
         List<ProductionEntity> productionEntities = productionRepository.findAll();
+        List<UUID> missingCustomerOrderKeys = new ArrayList<>();
+        if (!productionEntities.isEmpty()) {
+            List<UUID> customerOrderKey = productionEntities.stream()
+                    .map(ProductionEntity::getCustomerOrderKey)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+            log.debug("Получено {} уникальных customerOrderKey документов по производству", customerOrderKey.size());
+
+            Set<UUID> customerOrderSet = new HashSet<>(customerOrderKey);
+
+            missingCustomerOrderKeys = docOrders.stream()
+                    .filter(key -> !customerOrderSet.contains(key))
+                    .toList();
+        } else {
+            log.info("Список документов по производству пуст");
+            missingCustomerOrderKeys = docOrders.stream().toList();
+        }
+
+
+        if (!missingCustomerOrderKeys.isEmpty()) {
+            log.info("🔄 Обнаружено {} расходников без документов на производство, загружаем из 1С...", missingCustomerOrderKeys.size());
+            try {
+
+                productionService.getAllProductionByCustomerOrders(missingCustomerOrderKeys);
+
+            } catch(Exception e){
+                log.error("❌ Ошибка загрузки недостающих документов по производству: {}", e.getMessage(), e);
+            }
+        }
+    }
+
+    public void addAllProductionOld() {
+        List<ExpendEntity> expendEntities = expendRepository.findAll();
+
+        // Необходимо сравнить UUID расходников и производства,
+        // для выявления недостающих производств привязанных к заказам покупателей
+        if (expendEntities.isEmpty()) {
+            log.debug("Список расходников пуст");
+            return;
+        }
+
+        List<UUID> docOrders = expendEntities.stream()
+                .map(ExpendEntity::getDocOrder)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        log.debug("Получено {} уникальных docOrder расходников", docOrders.size());
+
+        List<ProductionEntity> productionEntities = productionRepository.findAll();
         if (productionEntities.isEmpty()) {
-            log.debug("Список документов по производству пуст");
+            log.info("Список документов по производству пуст");
             return;
         }
 

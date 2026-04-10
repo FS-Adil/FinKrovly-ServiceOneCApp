@@ -123,7 +123,9 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
         costCalculationFullService.updateResultingIncome();
         log.info("📥 Шаг 6.5/7: Расчет Себестоимости.");
         costCalculationFullService.findCostPrice();
-        log.info("📥 Шаг 6.6/7:");
+        log.info("📥 Шаг 6.6/7: Возвраты от покупателей, добавляем в List.");
+        costCalculationFullService.returnExpendStocks(startDate, endDate);
+        log.info("📥 Шаг 6.7/7:");
         list = costCalculationFullService.getList();
         log.info("✅ Сформирован итоговый List за {} мс ", System.currentTimeMillis() - stepStart);
 
