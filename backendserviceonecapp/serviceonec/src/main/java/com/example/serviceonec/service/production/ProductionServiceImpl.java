@@ -506,11 +506,11 @@ public class ProductionServiceImpl implements ProductionService {
             }
 
             // Логируем прогресс каждые 10 заказов
-            if (itemNumber % 10 == 0 || itemNumber == customerOrderKeys.size()) {
-                log.info("[Поток {}] Прогресс: {}/{} заказов (✅ {} успешно, ❌ {} ошибок, ⏭️ {} пропущено)",
-                        threadNumber, itemNumber, customerOrderKeys.size(),
-                        successInThread, failedInThread, skippedInThread);
-            }
+//            if (itemNumber % 10 == 0 || itemNumber == customerOrderKeys.size()) {
+//                log.info("[Поток {}] Прогресс: {}/{} заказов (✅ {} успешно, ❌ {} ошибок, ⏭️ {} пропущено)",
+//                        threadNumber, itemNumber, customerOrderKeys.size(),
+//                        successInThread, failedInThread, skippedInThread);
+//            }
         }
 
         log.info("[Поток {}: {}] ЗАВЕРШЕНИЕ. Итого в потоке: обработано {}, ✅ успешно {}, ❌ ошибок {}, ⏭️ пропущено {}",

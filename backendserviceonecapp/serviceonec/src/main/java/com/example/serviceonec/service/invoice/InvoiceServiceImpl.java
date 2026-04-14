@@ -101,11 +101,11 @@ public class InvoiceServiceImpl implements InvoiceService {
                                     long requestTime = System.currentTimeMillis() - requestStartTime;
 
                                     if (!items.isEmpty()) {
-                                        log.info("[Поток: {}] Запрос #{}.{} УСПЕШНО: получено {} записей (skip={}) за {} мс",
+                                        log.debug("[Поток: {}] Запрос #{}.{} УСПЕШНО: получено {} записей (skip={}) за {} мс",
                                                 threadName, currentBatch, requestNumber, items.size(), currentSkip, requestTime);
                                         return items;
                                     } else {
-                                        log.info("[Поток: {}] Запрос #{}.{} ЗАВЕРШЕН: данных нет (skip={}) за {} мс",
+                                        log.debug("[Поток: {}] Запрос #{}.{} ЗАВЕРШЕН: данных нет (skip={}) за {} мс",
                                                 threadName, currentBatch, requestNumber, currentSkip, requestTime);
                                         hasMoreData.set(false);
                                         return new ArrayList<InvoiceItemResponseDto>();
@@ -132,7 +132,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                                         totalRecordsLoaded.addAndGet(savedCount);
 
                                         long saveTime = System.currentTimeMillis() - saveStartTime;
-                                        log.info("💾 Сохранено {} записей (всего: {}, время сохранения: {} мс)",
+                                        log.debug("💾 Сохранено {} записей (всего: {}, время сохранения: {} мс)",
                                                 savedCount, totalRecordsLoaded.get(), saveTime);
 
                                     } catch (DataIntegrityViolationException e) {
@@ -202,7 +202,6 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         Page<InvoiceEntity> result = invoiceRepository.findAll(PageRequest.of(0, 10));
         log.info("📄 Возвращаем первые {} записей из {} всего", result.getNumberOfElements(), result.getTotalElements());
-
         return result;
     }
 
@@ -215,6 +214,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         String url = String.format("/Document_ПриходнаяНакладная?" +
                 "$filter=Posted eq true" +
                 " and Организация_Key eq guid'" + organizationId + "'" +
+                " and Date ge datetime'" + endDate.minusYears(3) + "'" +
                 " and Date le datetime'" + endDate + "'" +
                 "&" +
                 "$select= Number,Date,Ref_Key,Организация_Key,ВидОперации&" +

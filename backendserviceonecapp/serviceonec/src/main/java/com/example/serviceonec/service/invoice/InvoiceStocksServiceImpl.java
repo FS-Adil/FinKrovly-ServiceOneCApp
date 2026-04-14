@@ -27,7 +27,7 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
     private final InvoiceStocksRepository invoiceStocksRepository;
     private final InvoiceStocksMapper invoiceStocksMapper;
 
-    private static final int BATCH_SIZE = 500;
+    private static final int BATCH_SIZE = 750;
     private static final int REQUEST_DELAY_MS = 20;
     private static final int MAX_CONCURRENT_REQUESTS = 5;
 
@@ -169,7 +169,6 @@ public class InvoiceStocksServiceImpl implements InvoiceStocksService {
         }
 
         log.info("Всего ID для поиска: {}", ids.size());
-        log.info("Первые 10 ID: {}", ids.stream().limit(10).collect(Collectors.toList()));
 
         List<InvoiceStocksEntity> allEntitiesToSave = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger processedCount = new AtomicInteger(0);

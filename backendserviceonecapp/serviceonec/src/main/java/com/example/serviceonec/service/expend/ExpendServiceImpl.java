@@ -123,7 +123,7 @@ public class ExpendServiceImpl implements ExpendService {
                                     long requestTime = System.currentTimeMillis() - requestStartTime;
 
                                     if (!items.isEmpty()) {
-                                        log.info("[Поток: {}] Запрос #{}.{} УСПЕШНО: получено {} записей (skip={}) за {} мс",
+                                        log.debug("[Поток: {}] Запрос #{}.{} УСПЕШНО: получено {} записей (skip={}) за {} мс",
                                                 threadName, currentBatch, requestNumber, items.size(), currentSkip, requestTime);
 
                                         // Отмечаем, что в батче есть данные
@@ -131,14 +131,14 @@ public class ExpendServiceImpl implements ExpendService {
 
                                         return items;
                                     } else {
-                                        log.info("[Поток: {}] Запрос #{}.{}: данных нет (skip={}) за {} мс",
+                                        log.debug("[Поток: {}] Запрос #{}.{}: данных нет (skip={}) за {} мс",
                                                 threadName, currentBatch, requestNumber, currentSkip, requestTime);
                                         return new ArrayList<ExpendItemResponseDto>();
                                     }
 
                                 } catch (HttpClientErrorException.NotFound e) {
                                     // 404 - данные закончились
-                                    log.info("[Поток: {}] Запрос #{}.{}: данные закончились (404) skip={}",
+                                    log.debug("[Поток: {}] Запрос #{}.{}: данные закончились (404) skip={}",
                                             threadName, currentBatch, requestNumber, currentSkip);
                                     return new ArrayList<ExpendItemResponseDto>();
                                 } catch (HttpClientErrorException e) {

@@ -470,7 +470,7 @@ public class CostCalculationFullService {
 
         this.resultingIncomeFullMap.clear();
 
-        List<ResultingIncomeFullEntity> resultingIncomeFullEntityList = resultingIncomeFullRepository.findAll();
+        List<ResultingIncomeFullEntity> resultingIncomeFullEntityList = resultingIncomeFullRepository.findAllByOrderByDateDesc();
 
         if (resultingIncomeFullEntityList.isEmpty()) {
             log.warn("⚠️ Не найдено данных в таблице resulting_income_full");

@@ -8,6 +8,7 @@ import com.example.serviceonec.repository.invoice.InvoiceRepository;
 import com.example.serviceonec.repository.invoice.InvoiceStocksRepository;
 import com.example.serviceonec.service.invoice.InvoiceService;
 import com.example.serviceonec.service.invoice.InvoiceStocksService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,8 +31,8 @@ public class InvoiceFullService {
     private final InvoiceStocksRepository invoiceStocksRepository;
     private final InvoiceFullRepository invoiceFullRepository;
 
-    private List<InvoiceEntity> invoiceEntityList;
-    private Map<UUID, List<InvoiceStocksEntity>> dataMap;
+    private List<InvoiceEntity> invoiceEntityList = new ArrayList<>();
+    private Map<UUID, List<InvoiceStocksEntity>> dataMap = new HashMap<>();
 
     public void getAllInvoice(
             UUID organizationId,
@@ -43,8 +44,159 @@ public class InvoiceFullService {
         );
     }
 
-    public void getAllInvoiceStocks () {
+    public void getAllInvoiceStocksNew () {
         log.debug("🔍 Поиск всех приходных накладных в БД отсортированных по дате и по типу");
+        this.invoiceEntityList.clear();
+        this.dataMap.clear();
+
+        String operationType = "ПоступлениеОтПоставщика";
+        this.invoiceEntityList = invoiceRepository.findALlByOperationTypeOrdered(operationType);
+
+        log.debug("🔍 Загрузка запасов приходных накладных");
+        List<UUID> refKeys = this.invoiceEntityList.stream()
+                .map(InvoiceEntity::getRefKey)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (refKeys.isEmpty()) {
+            log.warn("⚠️ Не найдено приходных накладных с типом операции: {}", operationType);
+        }
+
+        log.debug("Найдено {} приходных накладных с типом операции '{}'", refKeys.size(), operationType);
+
+        List<InvoiceStocksEntity> allStocks = new ArrayList<>();
+
+        Set<UUID> missingRefKeys = new HashSet<>(refKeys);
+
+        if (!missingRefKeys.isEmpty()) {
+            log.info("🔄 Обнаружено {} приходников без запасов, загружаем из 1С...", missingRefKeys.size());
+
+            invoiceStocksRepository.deleteAll();
+
+            try {
+                invoiceStocksService.findInvoiceStocksByIds(missingRefKeys);
+
+                List<InvoiceStocksEntity> foundMissing = invoiceStocksRepository.findAll();
+
+                if (!foundMissing.isEmpty()) {
+                    allStocks.addAll(foundMissing);
+                    log.info("✅ Загружено {} записей из 1С", foundMissing.size());
+                }
+            } catch (Exception e) {
+                log.error("❌ Ошибка загрузки недостающих запасов: {}", e.getMessage(), e);
+            }
+        }
+
+        Map<UUID, Integer> orderMap = new HashMap<>();
+        for (int i = 0; i < refKeys.size(); i++) {
+            orderMap.put(refKeys.get(i), i);
+        }
+
+        allStocks.sort(Comparator.comparing(s -> orderMap.get(s.getRefKey())));
+
+        this.dataMap = allStocks.stream()
+                .collect(Collectors.groupingBy(InvoiceStocksEntity::getRefKey));
+
+        log.debug("✅ Мапа приходников создана: {} номенклатур", this.dataMap.size());
+    }
+
+    @Transactional
+    public void getAllInvoiceStocks (LocalDateTime dateTo) {
+        log.debug("🔍 Поиск всех приходных накладных в БД отсортированных по дате и по типу");
+        this.invoiceEntityList.clear();
+        this.dataMap.clear();
+
+        String operationType = "ПоступлениеОтПоставщика";
+
+        List<InvoiceEntity> invoiceEntitiesDateRange = invoiceRepository.findAllByOperationTypeAndDateRange(
+                operationType,
+                dateTo.minusMonths(3),
+                dateTo
+                );
+
+        List<UUID> refKeysDateRange = invoiceEntitiesDateRange.stream()
+                .map(InvoiceEntity::getRefKey)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // Удаление по списку ключей
+        invoiceStocksRepository.deleteAllByRefKeyIn(refKeysDateRange);
+
+        if (!refKeysDateRange.isEmpty()) {
+            log.info("🔄 Обнаружено {} приходников  за ВЫБРАННЫЙ {} - {} период, загружаем из 1С...", refKeysDateRange.size(), dateTo.minusMonths(12), dateTo);
+            try {
+                invoiceStocksService.findInvoiceStocksByIds(new HashSet<>(refKeysDateRange));
+            } catch (Exception e) {
+                log.error("❌ Ошибка загрузки недостающих запасов: {}", e.getMessage(), e);
+            }
+        }
+
+        this.invoiceEntityList = invoiceRepository.findALlByOperationTypeOrdered(operationType);
+
+        log.debug("🔍 Загрузка запасов приходных накладных");
+        List<UUID> refKeys = this.invoiceEntityList.stream()
+                .map(InvoiceEntity::getRefKey)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (refKeys.isEmpty()) {
+            log.warn("⚠️ Не найдено приходных накладных с типом операции: {}", operationType);
+        }
+
+        log.debug("Найдено {} приходных накладных с типом операции '{}'", refKeys.size(), operationType);
+
+        List<InvoiceStocksEntity> allStocks = invoiceStocksRepository.findAllByRefKeyIn(refKeys);
+
+        if (allStocks.isEmpty()) {
+            log.warn("⚠️ Не найдено запасов для приходных накладных");
+            return;
+        }
+
+        log.debug("Загружено {} записей запасов из БД", allStocks.size());
+
+        Set<UUID> foundRefKeys = allStocks.stream()
+                .map(InvoiceStocksEntity::getRefKey)
+                .collect(Collectors.toSet());
+
+        Set<UUID> missingRefKeys = new HashSet<>(refKeys);
+        missingRefKeys.removeAll(foundRefKeys);
+
+        if (!missingRefKeys.isEmpty()) {
+            log.info("🔄 Обнаружено {} приходников без запасов, загружаем из 1С...", missingRefKeys.size());
+            try {
+                List<InvoiceStocksEntity> foundMissing = invoiceStocksService
+                        .findInvoiceStocksByIds(missingRefKeys);
+
+                if (foundMissing != null && !foundMissing.isEmpty()) {
+                    allStocks.addAll(foundMissing);
+                    log.info("✅ Загружено {} записей из 1С", foundMissing.size());
+                }
+            } catch (Exception e) {
+                log.error("❌ Ошибка загрузки недостающих запасов: {}", e.getMessage(), e);
+            }
+        }
+
+        Map<UUID, Integer> orderMap = new HashMap<>();
+        for (int i = 0; i < refKeys.size(); i++) {
+            orderMap.put(refKeys.get(i), i);
+        }
+
+        allStocks.sort(Comparator.comparing(s -> orderMap.get(s.getRefKey())));
+
+        this.dataMap = allStocks.stream()
+                .collect(Collectors.groupingBy(InvoiceStocksEntity::getRefKey));
+
+        log.debug("✅ Мапа приходников создана: {} номенклатур", this.dataMap.size());
+    }
+
+    public void getAllInvoiceStocksOld () {
+        log.debug("🔍 Поиск всех приходных накладных в БД отсортированных по дате и по типу");
+        this.invoiceEntityList.clear();
+        this.dataMap.clear();
+
         String operationType = "ПоступлениеОтПоставщика";
         this.invoiceEntityList = invoiceRepository.findALlByOperationTypeOrdered(operationType);
 

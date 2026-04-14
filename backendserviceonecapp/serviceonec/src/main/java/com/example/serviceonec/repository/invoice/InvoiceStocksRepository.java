@@ -15,4 +15,6 @@ public interface InvoiceStocksRepository extends JpaRepository<InvoiceStocksEnti
 
     // И метод для загрузки по списку ключей:
     List<InvoiceStocksEntity> findAllByRefKeyIn(List<UUID> refKeys);
+
+    void deleteAllByRefKeyIn(List<UUID> refKeys);
 }

@@ -31,6 +31,10 @@ public class ResultingIncomeFullService {
     private static final int SMALL_LIST_THRESHOLD = 10_000;      // до 10k - stream API
     private static final int MEDIUM_LIST_THRESHOLD = 100_000;
 
+    public void deleteProductionFullRepository() {
+        productionFullRepository.deleteAll();
+    }
+
     public void addResultingIncomeFullTable() {
 
         resultingIncomeFullRepository.deleteAll();

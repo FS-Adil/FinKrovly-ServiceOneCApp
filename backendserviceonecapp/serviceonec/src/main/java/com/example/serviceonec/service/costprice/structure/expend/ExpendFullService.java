@@ -30,8 +30,8 @@ public class ExpendFullService {
     private final ExpendStocksRepository expendStocksRepository;
     private final ExpendFullRepository expendFullRepository;
 
-    private List<ExpendEntity> expendEntityList;
-    private Map<UUID, List<ExpendStocksEntity>> dataMap;
+    private List<ExpendEntity> expendEntityList = new ArrayList<>();
+    private Map<UUID, List<ExpendStocksEntity>> dataMap = new HashMap<>();
 
 
     public void getAllExpend(
@@ -47,6 +47,52 @@ public class ExpendFullService {
     }
 
     public void getAllExpendStocks() {
+        log.debug("🔍 Поиск всех расходных накладных в БД отсортированных по дате");
+        this.expendEntityList.clear();
+        this.dataMap.clear();
+
+        this.expendEntityList = expendRepository.findAllByOrderByDateDesc();
+        log.debug("🔍 Загрузка запасов расходных накладных");
+
+        expendStocksRepository.deleteAll();
+        log.info("✓ Таблицу expend_stocks очищена");
+
+        assert this.expendEntityList != null;
+        List<UUID> refKeys = this.expendEntityList.stream()
+                .map(ExpendEntity::getRefKey)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        log.debug("Получено {} уникальных refKey расходников", refKeys.size());
+
+        List<UUID> missingRefKeys = refKeys.stream().toList();
+
+        if (!missingRefKeys.isEmpty()) {
+            log.info("🔄 Обнаружено {} расходников без запасов, загружаем из 1С...", missingRefKeys.size());
+            try {
+                Map<UUID, List<ExpendStocksEntity>> foundMissing = expendStocksService
+                        .findExpendStocksByIds(missingRefKeys);
+
+                if (foundMissing != null && !foundMissing.isEmpty()) {
+                    foundMissing.forEach((key, value) ->
+                            this.dataMap.merge(key, value, (v1, v2) -> {
+                                List<ExpendStocksEntity> merged = new ArrayList<>(v1);
+                                merged.addAll(v2);
+                                return merged;
+                            })
+                    );
+                    int totalFound = foundMissing.values().stream().mapToInt(List::size).sum();
+                    log.info("✅ Загружено {} записей из 1С для {} расходников", totalFound, foundMissing.size());
+                }
+            } catch (Exception e) {
+                log.error("❌ Ошибка загрузки недостающих запасов: {}", e.getMessage(), e);
+            }
+        }
+        log.debug("✅ Мапа расходников создана: {} документов с запасами", this.dataMap.size());
+    }
+
+    public void getAllExpendStocksOld() {
         log.debug("🔍 Поиск всех расходных накладных в БД отсортированных по дате");
         this.expendEntityList = expendRepository.findAllByOrderByDateDesc();
 

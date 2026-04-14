@@ -66,7 +66,7 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
         log.info("📥 Шаг 2.1/7: Получаем список Приходных накладных (Поступление от поставщика)(Приходников) из 1с ПРИХОД");
         invoiceFullService.getAllInvoice(organizationId, endDate);
         log.info("📥 Шаг 2.2/7: Получаем список ЗАПАСОВ приходных накладных на основе Приходников из бд или из 1с если в бд их нет");
-        invoiceFullService.getAllInvoiceStocks();
+        invoiceFullService.getAllInvoiceStocks(endDate);
         log.info("📥 Шаг 2.3/7: Формируем InvoiceFullEntity");
         invoiceFullService.fillInvoiceFullEntity();
         log.info("✅ Сформировано InvoiceFullEntity за {} мс ", System.currentTimeMillis() - stepStart);
@@ -87,6 +87,7 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
         log.info("📥 Шаг 4.2/7: Получаем список всех документов по производству исходя из данных из расходников");
         productionFullService.addAllProduction();
             log.info("📥 Шаг 4.2.1/7: Cобираем таблицу ПРИХОДОВ в одну (Приходная накладная от поставщика + Производство) и сортируем по дате");
+            resultingIncomeFullService.deleteProductionFullRepository(); // на первом этапе необходимо очишать таблицу от предыдуших запросов
             resultingIncomeFullService.addResultingIncomeFullTable();
         log.info("📥 Шаг 4.3/7: Формирование данных для расчета себестоимости");
         productionFullService.loadingDataForProduction();

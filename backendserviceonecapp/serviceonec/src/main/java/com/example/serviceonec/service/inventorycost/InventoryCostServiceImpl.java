@@ -48,7 +48,7 @@ public class InventoryCostServiceImpl implements InventoryCostService{
         log.info("📥 Шаг-2.1/7: Получаем список Приходных накладных (Поступление от поставщика)(Приходников) из 1с и сохраняем в БД");
         invoiceFullService.getAllInvoice(organizationId, endDate);
         log.info("📥 Шаг-2.2/7: Получаем список ЗАПАСОВ приходных накладных на основе Приходников из бд или из 1с если в бд их нет");
-        invoiceFullService.getAllInvoiceStocks();
+        invoiceFullService.getAllInvoiceStocks(endDate);
         log.info("📥 Шаг-2.3/7: Формируем InvoiceFullEntity и сохраняем в БД");
         invoiceFullService.fillInvoiceFullEntity();
         log.info("✅ Шаг-2/7 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
