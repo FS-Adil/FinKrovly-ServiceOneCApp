@@ -87,7 +87,7 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
         log.info("📥 Шаг 4.2/7: Получаем список всех документов по производству исходя из данных из расходников");
         productionFullService.addAllProduction();
             log.info("📥 Шаг 4.2.1/7: Cобираем таблицу ПРИХОДОВ в одну (Приходная накладная от поставщика + Производство) и сортируем по дате");
-            resultingIncomeFullService.deleteProductionFullRepository(); // на первом этапе необходимо очишать таблицу от предыдуших запросов
+            resultingIncomeFullService.deleteProductionFullRepository(); // на первом этапе необходимо очищать таблицу от предыдуших запросов
             resultingIncomeFullService.addResultingIncomeFullTable();
         log.info("📥 Шаг 4.3/7: Формирование данных для расчета себестоимости");
         productionFullService.loadingDataForProduction();
@@ -101,6 +101,10 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
             resultingIncomeFullService.addResultingIncomeFullTable();
         log.info("📥 Шаг 4.6/7: Этап 3 Расчет себестоимости по производству исходя из приходных накладных и остатков в организации");
         productionFullService.calculationStageThree();
+            log.info("📥 Шаг 4.6.1/7: Cобираем таблицу ПРИХОДОВ в одну (Приходная накладная от поставщика + Производство) и сортируем по дате");
+            resultingIncomeFullService.addResultingIncomeFullTable();
+        log.info("📥 Шаг 4.7/7: Этап 4 Расчет себестоимости по производству исходя из приходных накладных и остатков в организации");
+        productionFullService.calculationStageFor();
         log.info("✅ Сформировано ProductionFullEntity за {} мс ", System.currentTimeMillis() - stepStart);
 
         // Шаг 5:
@@ -171,6 +175,7 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
                         .name(productName)
                         .characteristic(productCharacteristic)
                         .batch(productBatch)
+                        .measurementUnit(p.getMeasurementUnit())
                         .quantity(p.getQuantity())
                         .price(p.getPrice().multiply(p.getQuantity()))
                         .cost(p.getCost().multiply(p.getQuantity()))

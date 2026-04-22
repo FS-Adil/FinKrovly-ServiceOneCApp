@@ -20,6 +20,7 @@ public class CostPriceControllerOutput {
     private String name;
     private String characteristic;
     private String batch;
+    private String measurementUnit;
     private BigDecimal quantity;
     private BigDecimal price;
     private BigDecimal cost;

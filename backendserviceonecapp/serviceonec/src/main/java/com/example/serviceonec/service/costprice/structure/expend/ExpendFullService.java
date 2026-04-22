@@ -176,6 +176,7 @@ public class ExpendFullService {
                 UUID nomenclatureKey = expendStocksEntity.getNomenclatureKey();
                 UUID characteristicKey = expendStocksEntity.getCharacteristicKey();
                 UUID batchKey = expendStocksEntity.getBatchKey();
+                UUID measurementUnitKey = expendStocksEntity.getMeasurementUnit();
 
                 String number = expend.getNumber();
                 BigDecimal price = expendStocksEntity.getSum().divide(expendStocksEntity.getQuantity(), 3, RoundingMode.HALF_UP);
@@ -195,6 +196,7 @@ public class ExpendFullService {
                                 .nomenclatureKey(nomenclatureKey)
                                 .characteristicKey(characteristicKey)
                                 .batchKey(batchKey)
+                                .measurementUnitKey(measurementUnitKey)
                                 .quantity(quantity)
                                 .price(price)
                         .build());

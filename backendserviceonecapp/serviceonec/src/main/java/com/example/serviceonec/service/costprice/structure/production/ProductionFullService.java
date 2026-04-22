@@ -288,14 +288,6 @@ public class ProductionFullService {
                 .distinct()
                 .toList();
 
-        for (ProductionFullEntity productionFullEntities : this.productionFullEntities) {
-            BigDecimal price = productionFullEntities.getPrice();
-
-            if (price.compareTo(BigDecimal.ZERO) == 0) {
-                log.debug("❌ У данной номенклатуры нет себестоимости: {} ❌", nomenclatureMap.get(productionFullEntities.getNomenclatureKey()));
-            }
-        }
-
         //Получаем распределение запасов
         List<ProductionDistributionStocksEntity> productionDistributionStocksEntityList =
                 productionDistributionStocksRepository.findAllByRefKeyIn(refKeys);
@@ -303,6 +295,83 @@ public class ProductionFullService {
         calculation(productionDistributionStocksEntityList);
 
         fillProductionFullEntity("Этап 3");
+    }
+
+    public void calculationStageFor() {
+        //Получаем распределение запасов
+        List<ProductionDistributionStocksEntity> productionDistributionStocksEntityList =
+                productionDistributionStocksRepository.findAll();
+
+        //Получаем продукцию
+        List<ProductionItemsEntity> productionItemsEntityList = productionItemsRepository.findAll();
+
+
+        List<ProductionItemsEntity>  missingProductionItemsEntityList = findMissingProductionItemsFastest(
+                productionDistributionStocksEntityList,
+                productionItemsEntityList
+        );
+
+        if (missingProductionItemsEntityList.isEmpty()) {
+            log.info("Список missingProductionItemsEntityList содержит список из {} продукций, для которых в производстве нет запасов!", 0);
+            return;
+        }
+
+        log.info("Список missingProductionItemsEntityList содержит список из {} продукций, для которых в производстве нет запасов!", missingProductionItemsEntityList.size());
+
+        for (ProductionItemsEntity entity : missingProductionItemsEntityList) {
+            UUID refKey = entity.getRefKey();
+
+            ProductionEntity productionEntity = this.productionEntityMap.get(refKey);
+
+            LocalDateTime date = productionEntity.getDate();
+            String documentType = "ПРИХОД";
+            String documentTypeOneC = "Производство";
+            String number = productionEntity.getNumber();
+            UUID organizationKey = productionEntity.getOrganizationKey();
+            UUID structuralUnitKey = entity.getStructuralUnitKey();
+            UUID customerOrder = productionEntity.getCustomerOrderKey();
+
+
+            BigDecimal  itemQuantity = entity.getQuantity();
+            UUID itemNomenclatureKey = entity.getNomenclatureKey();
+            UUID itemCharacteristicKey = entity.getCharacteristicKey();
+            UUID itemBatchKey = entity.getBatchKey();
+
+            String itemName = nomenclatureMap.getOrDefault(itemNomenclatureKey, "Продукция Не найдено");
+
+            log.info("----------------> Номер документа производства -> {}: Номенклатура -> {}: Количество -> {}", number, itemName, itemQuantity);
+
+            addToResult(date, documentType, documentTypeOneC, number, refKey,
+                    organizationKey, structuralUnitKey, customerOrder, itemNomenclatureKey, itemCharacteristicKey,
+                    itemBatchKey, itemQuantity, BigDecimal.ZERO
+            );
+
+            zeroCost.incrementAndGet();
+        }
+
+        fillProductionFullEntity("Этап 4");
+
+    }
+
+    // Внутренний record для составного ключа
+    private record CompositeKey(UUID refKey, String linkKey) {}
+
+    private List<ProductionItemsEntity> findMissingProductionItemsFastest(
+            List<ProductionDistributionStocksEntity> stocksList,
+            List<ProductionItemsEntity> itemsList) {
+
+        Map<CompositeKey, ProductionItemsEntity> itemsMap = itemsList.stream()
+                .collect(Collectors.toMap(
+                        item -> new CompositeKey(item.getRefKey(), item.getLinkKey()),
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
+
+        stocksList.stream()
+                .filter(stock -> stock.getRefKey() != null && stock.getProductLinkKey() != null)
+                .forEach(stock -> itemsMap.remove(new CompositeKey(stock.getRefKey(), stock.getProductLinkKey())));
+
+        return new ArrayList<>(itemsMap.values());
     }
 
     private void fillProductionFullEntity(String string) {

@@ -54,6 +54,9 @@ public class ExpendFullEntity {
     @Column(name = "batch_key", nullable = false)
     private UUID batchKey;
 
+    @Column(name = "measurement_unit_key")
+    private UUID measurementUnitKey;
+
     @Column(name = "quantity", nullable = false)
     private BigDecimal quantity;
 

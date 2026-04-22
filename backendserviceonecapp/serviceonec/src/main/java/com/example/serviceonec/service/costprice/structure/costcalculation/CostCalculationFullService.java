@@ -2,6 +2,7 @@ package com.example.serviceonec.service.costprice.structure.costcalculation;
 
 
 import com.example.serviceonec.controller.costprice.output.CostPriceControllerOutput;
+import com.example.serviceonec.model.dto.response.MeasurementUnitItemResponseDto;
 import com.example.serviceonec.model.entity.BatchEntity;
 import com.example.serviceonec.model.entity.CharacteristicEntity;
 import com.example.serviceonec.model.entity.NomenclatureEntity;
@@ -18,6 +19,7 @@ import com.example.serviceonec.repository.invoice.InvoiceRepository;
 import com.example.serviceonec.repository.invoice.InvoiceStocksRepository;
 import com.example.serviceonec.repository.remaining.RemainingRepository;
 import com.example.serviceonec.repository.resultingincome.ResultingIncomeFullRepository;
+import com.example.serviceonec.service.MeasurementUnitService;
 import com.example.serviceonec.service.invoice.InvoiceStocksService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,7 @@ public class CostCalculationFullService {
     private final InvoiceStocksRepository invoiceStocksRepository;
 
     private final InvoiceStocksService invoiceStocksService;
+    private final MeasurementUnitService measurementUnitService;
 
     private List<ExpendFullEntity> expendFullEntityList = new ArrayList<>();
 
@@ -63,6 +66,7 @@ public class CostCalculationFullService {
     private Map<UUID, String> nomenclatureMap = new HashMap<>();
     private Map<UUID, String> characteristicMap = new HashMap<>();
     private Map<UUID, String> batchMap = new HashMap<>();
+    private Map<UUID, String> measurementUnitMap = new HashMap<>();
 
     public void findAllExpendFullEntity() {
         log.debug("🔍 Поиск всех расходных накладных в БД");
@@ -82,6 +86,9 @@ public class CostCalculationFullService {
 
         log.info("  - Загрузка партий...");
         this.batchMap = createMapForBatch();
+
+        log.info("  - Загрузка Единиц Измерения...");
+        this.measurementUnitMap = createMapForMeasurementUnit();
 
         this.list.clear();
         log.info("Список с расчетом себестоимости очищен");
@@ -106,12 +113,14 @@ public class CostCalculationFullService {
             UUID nomenclatureKey = expend.getNomenclatureKey();
             UUID characteristicKey = expend.getCharacteristicKey();
             UUID batchKey = expend.getBatchKey();
+            UUID measurementUnitKey = expend.getMeasurementUnitKey();
 
             String number = expend.getNumber();
             String refKey = expendRefKey.toString();
             String name = nomenclatureMap.getOrDefault(nomenclatureKey, "Не найдено");
             String characteristic = characteristicMap.getOrDefault(characteristicKey, "Не найдено");
             String batch = batchMap.getOrDefault(batchKey, "Не найдено");
+            String measurementUnit = measurementUnitMap.getOrDefault(measurementUnitKey, "Не найдено");
             BigDecimal price = expend.getPrice();
             BigDecimal quantity = expend.getQuantity().setScale(3, RoundingMode.HALF_UP);
 
@@ -120,17 +129,17 @@ public class CostCalculationFullService {
             // Проверка наличия в приходниках
             if (!resultingIncomeFullMap.containsKey(nomenclatureKey)) {
                 notFoundNomenclature.incrementAndGet();
-                addToResult(this.list, refKey, number, name, characteristic, batch, quantity, price, BigDecimal.ZERO);
+                addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit, quantity, price, BigDecimal.ZERO);
                 continue;
             }
             if (!resultingIncomeFullMap.get(nomenclatureKey).containsKey(characteristicKey)) {
                 notFoundCharacteristic.incrementAndGet();
-                addToResult(this.list, refKey, number, name, characteristic, batch, quantity, price, BigDecimal.ZERO);
+                addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit, quantity, price, BigDecimal.ZERO);
                 continue;
             }
             if (!resultingIncomeFullMap.get(nomenclatureKey).get(characteristicKey).containsKey(batchKey)) {
                 notFoundBatch.incrementAndGet();
-                addToResult(this.list, refKey, number, name, characteristic, batch, quantity, price, BigDecimal.ZERO);
+                addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit, quantity, price, BigDecimal.ZERO);
                 continue;
             }
 
@@ -149,14 +158,14 @@ public class CostCalculationFullService {
                 quantity = map.get("quantity");
                 if (cost.compareTo(BigDecimal.ZERO) == 0) {
                     zeroCost.incrementAndGet();
-                    addToResult(this.list, refKey, number, name, characteristic, batch,
+                    addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit,
                             quantity,
                             price,
                             BigDecimal.ZERO
                     );
                 } else {
                     foundWithCost.incrementAndGet();
-                    addToResult(this.list, refKey, number, name, characteristic, batch,
+                    addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit,
                             quantity,
                             price,
                             cost
@@ -230,23 +239,24 @@ public class CostCalculationFullService {
                 String characteristic = this.characteristicMap.get(characteristicKey);
                 UUID batchKey = invoiceStocksEntity.getBatchKey();
                 String batch = this.batchMap.get(batchKey);
+                String measurementUnit = this.measurementUnitMap.get(UUID.randomUUID());
                 BigDecimal quantity = invoiceStocksEntity.getQuantity();
                 BigDecimal price = invoiceStocksEntity.getPrice();
 
                 // Проверка наличия в приходниках
                 if (!resultingIncomeFullMap.containsKey(nomenclatureKey)) {
                     notFoundNomenclature.incrementAndGet();
-                    addToResult(this.list, refKey, number, name, characteristic, batch, quantity.negate(), price, BigDecimal.ZERO);
+                    addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit, quantity.negate(), price, BigDecimal.ZERO);
                     continue;
                 }
                 if (!resultingIncomeFullMap.get(nomenclatureKey).containsKey(characteristicKey)) {
                     notFoundCharacteristic.incrementAndGet();
-                    addToResult(this.list, refKey, number, name, characteristic, batch, quantity.negate(), price, BigDecimal.ZERO);
+                    addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit, quantity.negate(), price, BigDecimal.ZERO);
                     continue;
                 }
                 if (!resultingIncomeFullMap.get(nomenclatureKey).get(characteristicKey).containsKey(batchKey)) {
                     notFoundBatch.incrementAndGet();
-                    addToResult(this.list, refKey, number, name, characteristic, batch, quantity.negate(), price, BigDecimal.ZERO);
+                    addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit, quantity.negate(), price, BigDecimal.ZERO);
                     continue;
                 }
 
@@ -264,13 +274,13 @@ public class CostCalculationFullService {
                     BigDecimal cost = map.get("cost");
                     quantity = map.get("quantity");
                     if (cost.compareTo(BigDecimal.ZERO) == 0) {
-                        addToResult(this.list, refKey, number, name, characteristic, batch,
+                        addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit,
                                 quantity.negate(),
                                 price,
                                 BigDecimal.ZERO
                         );
                     } else {
-                        addToResult(this.list, refKey, number, name, characteristic, batch,
+                        addToResult(this.list, refKey, number, name, characteristic, batch, measurementUnit,
                                 quantity.negate(),
                                 price,
                                 cost
@@ -451,7 +461,7 @@ public class CostCalculationFullService {
     }
 
     private void addToResult(List<CostPriceControllerOutput> list, String refKey, String number,
-                             String name, String characteristic, String batch,
+                             String name, String characteristic, String batch, String measurementUnit,
                              BigDecimal quantity, BigDecimal price, BigDecimal cost) {
         list.add(CostPriceControllerOutput.builder()
                 .refKey(refKey)
@@ -459,6 +469,7 @@ public class CostCalculationFullService {
                 .name(name)
                 .characteristic(characteristic)
                 .batch(batch)
+                .measurementUnit(measurementUnit)
                 .quantity(quantity)
                 .price(price)
                 .cost(cost)
@@ -655,6 +666,21 @@ public class CostCalculationFullService {
         }
 
         log.debug("✅ Справочник партий создан, записей: {}", dataMap.size());
+        return dataMap;
+    }
+
+    private Map<UUID, String> createMapForMeasurementUnit() {
+        log.debug("🔍 Создание справочника Ед");
+        List<MeasurementUnitItemResponseDto> entities = measurementUnitService.getAllMeasurementUnit();
+
+        int initialCapacity = (int) (entities.size() / 0.75) + 1;
+        Map<UUID, String> dataMap = new HashMap<>(initialCapacity);
+
+        for (MeasurementUnitItemResponseDto entity : entities) {
+            dataMap.put(entity.getRefKey(), entity.getDescription());
+        }
+
+        log.debug("✅ Справочник Ед. создан, записей: {}", dataMap.size());
         return dataMap;
     }
 

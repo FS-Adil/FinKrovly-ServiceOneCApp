@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: V002_0_016__add_measurement_unit_key_to_expend_full_table
+      author: adilhan
+      changes:
+        - addColumn:
+            tableName: expend_full
+            columns:
+              - column:
+                  name: measurement_unit_key
+                  type: UUID
+                  constraints:
+                    nullable: true
+                  remarks: "Ключ единицы измерения"
