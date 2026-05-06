@@ -24,6 +24,7 @@ import com.example.serviceonec.service.invoice.InvoiceStocksService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import javax.xml.namespace.QName;
@@ -228,6 +229,9 @@ public class CostCalculationFullService {
 
             UUID uuid = entity.getRefKey();
             List<InvoiceStocksEntity> stocks = this.dataMap.get(uuid);
+            if (stocks == null) {
+                continue;
+            }
             for (InvoiceStocksEntity invoiceStocksEntity : stocks) {
                 processedStocks.incrementAndGet();
 
@@ -506,6 +510,22 @@ public class CostCalculationFullService {
     }
 
     public void findAllRemainingStocks() {
+        this.remainigStocksMap.clear();
+        List<RemainingEntity> remainingEntityList = remainingRepository.findAll();
+
+        for (RemainingEntity entity : remainingEntityList) {
+            // Создаем КОПИЮ!
+            RemainingEntity copy = new RemainingEntity();
+            BeanUtils.copyProperties(entity, copy);
+
+            this.remainigStocksMap
+                    .computeIfAbsent(copy.getNomenclatureKey(), k -> new HashMap<>())
+                    .computeIfAbsent(copy.getCharacteristicKey(), k -> new HashMap<>())
+                    .put(copy.getBatchKey(), copy);
+        }
+    }
+
+    public void findAllRemainingStocksOld() {
         log.debug("🔍 Загрузка остатков из БД");
 
         this.remainigStocksMap.clear();

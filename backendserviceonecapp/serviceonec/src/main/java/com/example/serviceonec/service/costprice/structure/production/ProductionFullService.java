@@ -535,6 +535,34 @@ public class ProductionFullService {
 
         List<RemainingEntity> remainingEntityList = remainingRepository.findAll();
 
+        if (remainingEntityList.isEmpty()) {
+            log.debug("⚠️ Список остатков пуст");
+            return;
+        }
+
+        for (RemainingEntity entity : remainingEntityList) {
+            // Создаем КОПИЮ - теперь изменения не уйдут в БД
+            RemainingEntity copy = new RemainingEntity();
+            BeanUtils.copyProperties(entity, copy);
+
+            UUID nomenclatureKey = copy.getNomenclatureKey();
+            UUID characteristicKey = copy.getCharacteristicKey();
+            UUID batchKey = copy.getBatchKey();
+
+            this.remainigStocksMap
+                    .computeIfAbsent(nomenclatureKey, k -> new HashMap<>())
+                    .computeIfAbsent(characteristicKey, k -> new HashMap<>())
+                    .put(batchKey, copy);
+        }
+
+        log.debug("✅ Остатки загружены (копии), уникальных номенклатур: {}", this.remainigStocksMap.size());
+    }
+
+    private void createMapForRemainingStocksOld() {
+        this.remainigStocksMap.clear();
+
+        List<RemainingEntity> remainingEntityList = remainingRepository.findAll();
+
 
         for (RemainingEntity entity : remainingEntityList) {
             Map<UUID, Map<UUID, RemainingEntity>> mapLevel2 = new HashMap<>();
