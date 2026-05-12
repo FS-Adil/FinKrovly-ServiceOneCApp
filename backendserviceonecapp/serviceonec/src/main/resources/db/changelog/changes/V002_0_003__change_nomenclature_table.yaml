@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: V002_0_003__change_nomenclature_table
+      author: adilhan
+      changes:
+        - addColumn:
+            tableName: nomenclature
+            columns:
+              - column:
+                  name: measurement_unit_key
+                  type: UUID
+                  constraints:
+                    nullable: true

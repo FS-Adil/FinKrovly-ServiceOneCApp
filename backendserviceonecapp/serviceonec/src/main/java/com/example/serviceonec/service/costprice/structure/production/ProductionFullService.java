@@ -214,6 +214,38 @@ public class ProductionFullService {
 
         log.info(" Этап 1 -> Расчет производства - Загрузка приходных накладных...");
         this.resultingIncomeFullMap = createAllResultingIncomeFullEntity();
+
+        // Очищаем список с результатами себестоимости производства
+        this.productionFullEntities.clear();
+
+        notFoundNomenclature = new AtomicInteger(0);
+        notFoundCharacteristic = new AtomicInteger(0);
+        notFoundBatch = new AtomicInteger(0);
+        zeroCost = new AtomicInteger(0);
+        foundWithCost = new AtomicInteger(0);
+
+        //Получаем распределение запасов
+        List<ProductionDistributionStocksEntity> productionDistributionStocksEntityList =
+                productionDistributionStocksRepository.findAll();
+
+        // Создаем новый список для отфильтрованных элементов
+        List<ProductionDistributionStocksEntity> filteredList = new ArrayList<>();
+
+        for (ProductionDistributionStocksEntity entity : productionDistributionStocksEntityList) {
+            if (entity.getBatchKey().compareTo(UUID.fromString("00000000-0000-0000-0000-000000000000")) != 0) {
+                filteredList.add(entity);
+            }
+        }
+
+        calculation(filteredList);
+
+        fillProductionFullEntity("Этап 1");
+    }
+
+    public void calculationStageOneOld() {
+
+        log.info(" Этап 1 -> Расчет производства - Загрузка приходных накладных...");
+        this.resultingIncomeFullMap = createAllResultingIncomeFullEntity();
         log.info(" Этап 1 -> Расчет производства - Загрузка остатков...");
         createMapForRemainingStocks();
         log.info(" Этап 1 -> Расчет производства - Обновляем приходные накладные исходя из остатков...");
@@ -339,7 +371,7 @@ public class ProductionFullService {
 
             String itemName = nomenclatureMap.getOrDefault(itemNomenclatureKey, "Продукция Не найдено");
 
-            log.info("----------------> Номер документа производства -> {}: Номенклатура -> {}: Количество -> {}", number, itemName, itemQuantity);
+            log.debug("----------------> Номер документа производства -> {}: Номенклатура -> {}: Количество -> {}", number, itemName, itemQuantity);
 
             addToResult(date, documentType, documentTypeOneC, number, refKey,
                     organizationKey, structuralUnitKey, customerOrder, itemNomenclatureKey, itemCharacteristicKey,

@@ -39,44 +39,44 @@ public class InventoryCostServiceImpl implements InventoryCostService{
 
         // Шаг 1:
         stepStart = System.currentTimeMillis();
-        log.info("📥 Шаг-1.1/7: Получаем остатки товаров из 1с по id организации и сохраняем в БД");
+        log.info("📥 Шаг-1.1/5: Получаем остатки товаров из 1с по id организации и сохраняем в БД");
         remainingService.getAllRemaining(organizationId, endDate);
-        log.info("✅ Шаг-1/7 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
+        log.info("✅ Шаг-1/5 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
 
         // Шаг 2:
         stepStart = System.currentTimeMillis();
-        log.info("📥 Шаг-2.1/7: Получаем список Приходных накладных (Поступление от поставщика)(Приходников) из 1с и сохраняем в БД");
+        log.info("📥 Шаг-2.1/5: Получаем список Приходных накладных (Поступление от поставщика)(Приходников) из 1с и сохраняем в БД");
         invoiceFullService.getAllInvoice(organizationId, endDate);
-        log.info("📥 Шаг-2.2/7: Получаем список ЗАПАСОВ приходных накладных на основе Приходников из бд или из 1с если в бд их нет");
+        log.info("📥 Шаг-2.2/5: Получаем список ЗАПАСОВ приходных накладных на основе Приходников из бд или из 1с если в бд их нет");
         invoiceFullService.getAllInvoiceStocks(endDate);
-        log.info("📥 Шаг-2.3/7: Формируем InvoiceFullEntity и сохраняем в БД");
+        log.info("📥 Шаг-2.3/5: Формируем InvoiceFullEntity и сохраняем в БД");
         invoiceFullService.fillInvoiceFullEntity();
-        log.info("✅ Шаг-2/7 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
+        log.info("✅ Шаг-2/5 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
 
         // Шаг 3:
         stepStart = System.currentTimeMillis();
-        log.info("📥 Шаг-3.1/7: Cобираем таблицу ПРИХОДОВ в одну (Приходная накладная от поставщика + Производство) и сортируем по дате");
+        log.info("📥 Шаг-3.1/5: Cобираем таблицу ПРИХОДОВ в одну (Приходная накладная от поставщика + Производство) и сортируем по дате");
         resultingIncomeFullService.addResultingIncomeFullTable();
-        log.info("✅ Шаг-3/7 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
+        log.info("✅ Шаг-3/5 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
 
         // Шаг 4:
         stepStart = System.currentTimeMillis();
-        log.info("📥 Шаг-4.1/7: Загрузка Остатков из БД...");
+        log.info("📥 Шаг-4.1/5: Загрузка Остатков из БД...");
         inventoryCostCalculationService.findAllRemainingStocks();
-        log.info("📥 Шаг-4.2/7: Загрузка Результирующий ПРИХОД из БД...");
+        log.info("📥 Шаг-4.2/5: Загрузка Результирующий ПРИХОД из БД...");
         inventoryCostCalculationService.findAllResultingIncomeFullEntity();
-        log.info("📥 Шаг-4.3/7: Расчет Себестоимости остатков");
+        log.info("📥 Шаг-4.3/5: Расчет Себестоимости остатков");
         inventoryCostCalculationService.findInventoryCostPrice(organizationId);
-        log.info("📥 Шаг-4.4/7: Формируем итоговый List");
+        log.info("📥 Шаг-4.4/5: Формируем итоговый List");
         list = inventoryCostCalculationService.getList();
-        log.info("✅ Шаг-4/7 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
+        log.info("✅ Шаг-4/5 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
 
         // Шаг 7:
         // Агрегация результатов
-        log.info("🔄 7.1/7:Агрегация результатов...");
+        log.info("🔄 5.1/5:Агрегация результатов...");
         stepStart = System.currentTimeMillis();
         List<InventoryCostControllerOutput> aggregated = aggregateOnlyFast(list);
-        log.info("✅ Шаг-7/7 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
+        log.info("✅ Шаг-5/5 заверщен за {} мс ", System.currentTimeMillis() - stepStart);
 
         long totalTime = System.currentTimeMillis() - methodStartTime;
         log.info("⏱️ Общее время выполнения: {} мс ({} сек)", totalTime, totalTime / 1000);
@@ -111,6 +111,7 @@ public class InventoryCostServiceImpl implements InventoryCostService{
                         .name(productName)
                         .characteristic(productCharacteristic)
                         .batch(productBatch)
+                        .measurementUnit(p.getMeasurementUnit())
                         .quantity(p.getQuantity())
                         .cost(p.getCost().multiply(p.getQuantity()))
                         .build()

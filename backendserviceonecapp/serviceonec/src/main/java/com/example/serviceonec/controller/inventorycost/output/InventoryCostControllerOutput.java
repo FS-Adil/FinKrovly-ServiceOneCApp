@@ -14,6 +14,7 @@ public class InventoryCostControllerOutput {
     private String name;
     private String characteristic;
     private String batch;
+    private String measurementUnit;
     private BigDecimal quantity;
     private BigDecimal cost;
 }

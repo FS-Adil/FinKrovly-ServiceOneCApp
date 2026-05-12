@@ -56,11 +56,11 @@ public class ProductionServiceImpl implements ProductionService {
 
 
     @Override
-    public Page<ProductionEntity> getAllProduction(UUID organizationId, LocalDateTime startDate, LocalDateTime endDate) {
+    public Page<ProductionEntity> getAllProductionOld(UUID organizationId, LocalDateTime startDate, LocalDateTime endDate) {
         log.info("===== НАЧАЛО ЗАГРУЗКИ ПРОИЗВОДСТВ =====");
         log.info("Организация ID: {}", organizationId);
         log.info("Период: {} - {}",
-                startDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                startDate.minusMonths(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 endDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         log.info("Параметры загрузки: batchSize={}, maxConcurrentRequests={}", BATCH_SIZE, MAX_CONCURRENT_REQUESTS);
 
@@ -86,7 +86,7 @@ public class ProductionServiceImpl implements ProductionService {
     }
 
     @Override
-    public Page<ProductionEntity> getAllProductionOld(
+    public Page<ProductionEntity> getAllProduction(
             UUID organizationId,
             LocalDateTime startDate,
             LocalDateTime endDate
@@ -95,7 +95,7 @@ public class ProductionServiceImpl implements ProductionService {
         log.info("===== НАЧАЛО ЗАГРУЗКИ ПРОИЗВОДСТВ =====");
         log.info("Организация ID: {}", organizationId);
         log.info("Период: {} - {}",
-                startDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                startDate.minusMonths(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 endDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         log.info("Параметры загрузки: batchSize={}, maxConcurrentRequests={}", BATCH_SIZE, MAX_CONCURRENT_REQUESTS);
 
@@ -349,7 +349,7 @@ public class ProductionServiceImpl implements ProductionService {
         }
 
         log.info("------> Все Производства из 1с за период с {} по {} найдены и сохранены в базу",
-                startDate, endDate);
+                startDate.minusMonths(1), endDate);
 
         Page<ProductionEntity> result = productionRepository.findAll(PageRequest.of(0, 10));
         log.info("📄 Возвращаем первые {} записей производств из {} всего",
@@ -636,7 +636,7 @@ public class ProductionServiceImpl implements ProductionService {
                         "$top=%d&$skip=%d&" +
                         "$format=json",
                 organizationId,
-                startDate,
+                startDate.minusMonths(1),
                 endDate,
                 top,
                 skip);

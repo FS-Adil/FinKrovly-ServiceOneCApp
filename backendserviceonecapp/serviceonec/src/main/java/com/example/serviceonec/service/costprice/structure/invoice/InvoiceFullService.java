@@ -111,7 +111,7 @@ public class InvoiceFullService {
 
         List<InvoiceEntity> invoiceEntitiesDateRange = invoiceRepository.findAllByOperationTypeAndDateRange(
                 operationType,
-                dateTo.minusMonths(3),
+                dateTo.minusMonths(6),
                 dateTo
                 );
 

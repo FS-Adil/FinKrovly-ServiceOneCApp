@@ -2,6 +2,7 @@ package com.example.serviceonec.service.inventorycost.structure;
 
 import com.example.serviceonec.controller.costprice.output.CostPriceControllerOutput;
 import com.example.serviceonec.controller.inventorycost.output.InventoryCostControllerOutput;
+import com.example.serviceonec.model.dto.response.MeasurementUnitItemResponseDto;
 import com.example.serviceonec.model.entity.BatchEntity;
 import com.example.serviceonec.model.entity.CharacteristicEntity;
 import com.example.serviceonec.model.entity.NomenclatureEntity;
@@ -13,6 +14,7 @@ import com.example.serviceonec.repository.CharacteristicRepository;
 import com.example.serviceonec.repository.NomenclatureRepository;
 import com.example.serviceonec.repository.remaining.RemainingRepository;
 import com.example.serviceonec.repository.resultingincome.ResultingIncomeFullRepository;
+import com.example.serviceonec.service.MeasurementUnitService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +38,12 @@ public class InventoryCostCalculationService {
     private final ResultingIncomeFullRepository resultingIncomeFullRepository;
     private final RemainingRepository remainingRepository;
 
+    private final MeasurementUnitService measurementUnitService;
+
     @Getter
     private List<InventoryCostControllerOutput> list = new ArrayList<>();
 
+    private Map<UUID, String> measurementUnitMap = new HashMap<>();
     private Map<UUID, Map<UUID, Map<UUID, List<ResultingIncomeFullEntity>>>> resultingIncomeFullMap = new HashMap<>();
     private List<RemainingEntity> remainingEntityList = new ArrayList<>();
 
@@ -51,11 +56,17 @@ public class InventoryCostCalculationService {
         log.info("  - Загрузка номенклатуры...");
         Map<UUID, String> nomenclatureMap = createMapForNomenclature();
 
+        log.info("  - Загрузка Единицы измерения номенклатуры...");
+        Map<UUID, UUID> nomenclatureMeasurementUnitMap = createMapForNomenclatureMeasurementUnit();
+
         log.info("  - Загрузка характеристик...");
         Map<UUID, String> characteristicMap = createMapForCharacteristic();
 
         log.info("  - Загрузка партий...");
         Map<UUID, String> batchMap = createMapForBatch();
+
+        log.info("  - Загрузка Единиц Измерения...");
+        this.measurementUnitMap = createMapForMeasurementUnit();
 
         this.list.clear();
         log.info("Список с расчетом себестоимости очищен");
@@ -87,28 +98,31 @@ public class InventoryCostCalculationService {
             UUID characteristicKey = entity.getCharacteristicKey();
             UUID batchKey = entity.getBatchKey();
 
+            UUID measurementUnitKey = nomenclatureMeasurementUnitMap.getOrDefault(nomenclatureKey, UUID.randomUUID());
+
             String orgId = organizationId.toString();
 
             String name = nomenclatureMap.getOrDefault(nomenclatureKey, "Не найдено");
             String characteristic = characteristicMap.getOrDefault(characteristicKey, "Не найдено");
             String batch = batchMap.getOrDefault(batchKey, "Не найдено");
+            String measurementUnit = measurementUnitMap.getOrDefault(measurementUnitKey, "Не найдено");
             BigDecimal quantity = entity.getQuantityBalance().setScale(3, RoundingMode.HALF_UP);
 
 
             // Проверка наличия в приходниках
             if (!resultingIncomeFullMap.containsKey(nomenclatureKey)) {
                 notFoundNomenclature.incrementAndGet();
-                addToResult(this.list, orgId, name, characteristic, batch, quantity, BigDecimal.ZERO);
+                addToResult(this.list, orgId, name, characteristic, batch, measurementUnit, quantity, BigDecimal.ZERO);
                 continue;
             }
             if (!resultingIncomeFullMap.get(nomenclatureKey).containsKey(characteristicKey)) {
                 notFoundCharacteristic.incrementAndGet();
-                addToResult(this.list, orgId, name, characteristic, batch, quantity, BigDecimal.ZERO);
+                addToResult(this.list, orgId, name, characteristic, batch, measurementUnit, quantity, BigDecimal.ZERO);
                 continue;
             }
             if (!resultingIncomeFullMap.get(nomenclatureKey).get(characteristicKey).containsKey(batchKey)) {
                 notFoundBatch.incrementAndGet();
-                addToResult(this.list, orgId, name, characteristic, batch, quantity, BigDecimal.ZERO);
+                addToResult(this.list, orgId, name, characteristic, batch, measurementUnit, quantity, BigDecimal.ZERO);
                 continue;
             }
 
@@ -127,13 +141,13 @@ public class InventoryCostCalculationService {
                 quantity = map.get("quantity");
                 if (cost.compareTo(BigDecimal.ZERO) == 0) {
                     zeroCost.incrementAndGet();
-                    addToResult(this.list, orgId, name, characteristic, batch,
+                    addToResult(this.list, orgId, name, characteristic, batch, measurementUnit,
                             quantity,
                             BigDecimal.ZERO
                     );
                 } else {
                     foundWithCost.incrementAndGet();
-                    addToResult(this.list, orgId, name, characteristic, batch,
+                    addToResult(this.list, orgId, name, characteristic, batch, measurementUnit,
                             quantity,
                             cost
                     );
@@ -244,13 +258,14 @@ public class InventoryCostCalculationService {
     }
 
     private void addToResult(List<InventoryCostControllerOutput> list, String refKey,
-                             String name, String characteristic, String batch,
+                             String name, String characteristic, String batch, String measurementUnit,
                              BigDecimal quantity, BigDecimal cost) {
         list.add(InventoryCostControllerOutput.builder()
                 .refKey(refKey)
                 .name(name)
                 .characteristic(characteristic)
                 .batch(batch)
+                .measurementUnit(measurementUnit)
                 .cost(cost)
                 .quantity(quantity)
                 .build()
@@ -301,6 +316,21 @@ public class InventoryCostCalculationService {
         return dataMap;
     }
 
+    private Map<UUID, UUID> createMapForNomenclatureMeasurementUnit() {
+        log.debug("🔍 Создание справочника номенклатуры");
+        List<NomenclatureEntity> entities = nomenclatureRepository.findAll();
+
+        int initialCapacity = (int) (entities.size() / 0.75) + 1;
+        Map<UUID, UUID> dataMap = new HashMap<>(initialCapacity);
+
+        for (NomenclatureEntity entity : entities) {
+            dataMap.put(entity.getRefKey(), entity.getMeasurementUnitKey());
+        }
+
+        log.debug("✅ Справочник номенклатуры создан, записей: {}", dataMap.size());
+        return dataMap;
+    }
+
     private Map<UUID, String> createMapForCharacteristic() {
         log.debug("🔍 Создание справочника характеристик");
         List<CharacteristicEntity> entities = characteristicRepository.findAll();
@@ -328,6 +358,21 @@ public class InventoryCostCalculationService {
         }
 
         log.debug("✅ Справочник партий создан, записей: {}", dataMap.size());
+        return dataMap;
+    }
+
+    private Map<UUID, String> createMapForMeasurementUnit() {
+        log.debug("🔍 Создание справочника Ед");
+        List<MeasurementUnitItemResponseDto> entities = measurementUnitService.getAllMeasurementUnit();
+
+        int initialCapacity = (int) (entities.size() / 0.75) + 1;
+        Map<UUID, String> dataMap = new HashMap<>(initialCapacity);
+
+        for (MeasurementUnitItemResponseDto entity : entities) {
+            dataMap.put(entity.getRefKey(), entity.getDescription());
+        }
+
+        log.debug("✅ Справочник Ед. создан, записей: {}", dataMap.size());
         return dataMap;
     }
 }

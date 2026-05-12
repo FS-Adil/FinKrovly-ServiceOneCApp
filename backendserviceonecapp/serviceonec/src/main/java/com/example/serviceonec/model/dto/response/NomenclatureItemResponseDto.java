@@ -11,6 +11,9 @@ public class NomenclatureItemResponseDto {
     @JsonProperty("Code")
     private String code;
 
+    @JsonProperty("ЕдиницаИзмерения_Key")
+    private String measurementUnitKey;
+
     @JsonProperty("Ref_Key")
     private String refKey;
 }

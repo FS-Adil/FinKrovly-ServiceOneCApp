@@ -20,6 +20,9 @@ public class NomenclatureEntity extends BaseEntity {
     @Column(name = "description", nullable = false)
     private String description;
 
+    @Column(name = "measurement_unit_key")
+    private UUID measurementUnitKey;
+
     @Column(name = "code", nullable = false, unique = true)
     private String code;
 

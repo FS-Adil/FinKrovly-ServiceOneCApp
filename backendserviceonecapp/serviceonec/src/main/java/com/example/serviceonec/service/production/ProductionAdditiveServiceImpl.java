@@ -64,7 +64,7 @@ public class ProductionAdditiveServiceImpl implements ProductionAdditiveService 
         log.info("Организация ID: {}", organizationId);
         log.info("Период: {} - {}",
                 endDate.minusMonths(MINUS_MONTHS).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                endDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                startDate.minusMonths(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         log.info("Параметры загрузки: batchSize={}, maxConcurrentRequests={}", BATCH_SIZE, MAX_CONCURRENT_REQUESTS);
 
         AtomicBoolean hasMoreData = new AtomicBoolean(true);
@@ -299,7 +299,7 @@ public class ProductionAdditiveServiceImpl implements ProductionAdditiveService 
         }
 
         log.info("------> Все Производства без заказа покупателя из 1с за период с {} по {} найдены и сохранены в базу",
-                endDate.minusMonths(MINUS_MONTHS), endDate);
+                endDate.minusMonths(MINUS_MONTHS), startDate.minusMonths(1));
 
         Page<ProductionEntity> result = productionRepository.findAll(PageRequest.of(0, 10));
         log.info("📄 Возвращаем первые {} записей производств из {} всего",
@@ -589,7 +589,7 @@ public class ProductionAdditiveServiceImpl implements ProductionAdditiveService 
                 "00000000-0000-0000-0000-000000000000",
                 organizationId,
                 endDate.minusMonths(MINUS_MONTHS),
-                endDate,
+                startDate.minusMonths(1),
                 top,
                 skip);
 
