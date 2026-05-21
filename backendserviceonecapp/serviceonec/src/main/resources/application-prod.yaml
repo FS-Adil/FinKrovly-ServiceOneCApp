@@ -63,3 +63,4 @@ one-c:
     one-c-guid: ${ONE_C_GUID}
     one-c-guid-open: ${ONE_C_GUID_OPEN}
     one-c-guid-defective: ${ONE_C_GUID_OPEN_DEFECTIVE}
+    one-c-guid-category: dfbbc053-4f21-11e1-bd92-f46d0466b92f
