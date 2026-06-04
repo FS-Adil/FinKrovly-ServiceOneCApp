@@ -324,7 +324,16 @@ public class ProductionFullService {
         List<ProductionDistributionStocksEntity> productionDistributionStocksEntityList =
                 productionDistributionStocksRepository.findAllByRefKeyIn(refKeys);
 
-        calculation(productionDistributionStocksEntityList);
+        // Создаем новый список для отфильтрованных элементов
+        List<ProductionDistributionStocksEntity> filteredList = new ArrayList<>();
+
+        for (ProductionDistributionStocksEntity entity : productionDistributionStocksEntityList) {
+            if (entity.getBatchKey().compareTo(UUID.fromString("00000000-0000-0000-0000-000000000000")) == 0) {
+                filteredList.add(entity);
+            }
+        }
+
+        calculation(filteredList);
 
         fillProductionFullEntity("Этап 3");
     }
