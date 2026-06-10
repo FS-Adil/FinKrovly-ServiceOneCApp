@@ -92,6 +92,29 @@ public class RollMobileServiceImpl implements RollMobileService {
             BigDecimal pricePerSquareMeter = batchEntity.getPrice();
             BigDecimal batchQuantity= batchEntity.getQuantity();
 
+            if (batchQuantity.compareTo(BigDecimal.ZERO) == 0) {
+                log.error("Обнаружен нулевой делитель при обработке рулона: {}-{}", name, batchEntity.getDescription());
+
+//                list.add(
+//                        RollMobileInputResponseDto.builder()
+//                                .name(name)
+//                                .manufacturer(
+//                                        structuralUnitMap.get(value.getStructuralUnit())
+//                                )
+//                                .organization(organization)
+//                                .batch(
+//                                        "No Name"
+//                                )
+//                                .pricePerSquareMeter(BigDecimal.valueOf(0.0))
+//                                .pricePerTon(pricePerTon)
+//                                .areaSquareMeters(areaSquareMeters)
+//                                .weightTons(weightTons)
+//                                .batchDate(LocalDate.of(2026, 12, 31))
+//                                .build()
+//                );
+                continue;
+            }
+
             BigDecimal coefficient = weight.divide(batchQuantity, RoundingMode.HALF_UP);
 
             if (weight.compareTo(BigDecimal.ZERO) > 0) {
