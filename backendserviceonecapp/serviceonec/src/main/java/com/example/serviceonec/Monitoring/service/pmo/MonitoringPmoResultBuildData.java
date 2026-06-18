@@ -1,61 +1,38 @@
-package com.example.serviceonec.Monitoring.service;
+package com.example.serviceonec.Monitoring.service.pmo;
 
-import com.example.serviceonec.Monitoring.dto.input.MonitoringOrderInputResponseDto;
 import com.example.serviceonec.Monitoring.dto.input.MonitoringPmoInputResponseDto;
-import com.example.serviceonec.Monitoring.service.pmo.MonitoringPmoResultBuildData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
-@Service
+@Component
 @RequiredArgsConstructor
 @Slf4j
-public class MonitoringPmoServiceImpl implements MonitoringPmoService {
+public class MonitoringPmoResultBuildData {
 
-    private final MonitoringPmoResultBuildData monitoringPmoResultBuildData;
+    private final MonitoringPmoDetailsBuildData monitoringPmoDetailsBuildData;
 
-    @Override
-    public Optional<MonitoringPmoInputResponseDto> getAllPmo() {
-//        return Optional.of(buildTestData());
-        return Optional.of(monitoringPmoResultBuildData.buildData());
-    }
+    public MonitoringPmoInputResponseDto buildData() {
+        List<MonitoringPmoInputResponseDto.OrderDetail> detailsOne = buildDetailsOne();
+        List<MonitoringPmoInputResponseDto.OrderDetail> detailsTwo = buildDetailsTwo();
 
-    private MonitoringPmoInputResponseDto buildTestData() {
-        List<MonitoringPmoInputResponseDto.OrderDetail> testDetails = buildTestDetails();
-
-        MonitoringPmoInputResponseDto.OrderPmo orderPmo = buildOrderPmo(testDetails);
+        MonitoringPmoInputResponseDto.OrderPmo orderPmoOne = buildOrderPmo(detailsOne);
+        MonitoringPmoInputResponseDto.OrderPmo orderPmoTwo = buildOrderPmo(detailsTwo);
 
         return MonitoringPmoInputResponseDto.builder()
-                .orderPmoOne(orderPmo)
-                .orderPmoTwo(orderPmo)
+                .orderPmoOne(orderPmoOne)
+                .orderPmoTwo(orderPmoTwo)
                 .build();
     }
 
-    private MonitoringPmoInputResponseDto.OrderPmo buildOrderPmo(List<MonitoringPmoInputResponseDto.OrderDetail> details) {
-        long paidCount = details.stream()
-                .filter(d -> "paid".equals(d.getStatus()))
-                .count();
-        long unpaidCount = details.stream()
-                .filter(d -> "unpaid".equals(d.getStatus()))
-                .count();
-        long processingCount = details.stream()
-                .filter(d -> "processing".equals(d.getStatus()))
-                .count();
-
-        return MonitoringPmoInputResponseDto.OrderPmo.builder()
-                .total(details.size())
-                .paid((int) paidCount)
-                .unpaid((int) unpaidCount)
-                .processing((int) processingCount)
-                .details(details)
-                .build();
+    private List<MonitoringPmoInputResponseDto.OrderDetail> buildDetailsTwo() {
+        return monitoringPmoDetailsBuildData.getDetailsPmoTwo();
     }
 
-    private List<MonitoringPmoInputResponseDto.OrderDetail> buildTestDetails() {
+    private List<MonitoringPmoInputResponseDto.OrderDetail> buildDetailsOne() {
         return Arrays.asList(
                 MonitoringPmoInputResponseDto.OrderDetail.builder()
                         .author("Смирнов А.А.")
@@ -94,4 +71,25 @@ public class MonitoringPmoServiceImpl implements MonitoringPmoService {
                         .build()
         );
     }
+
+    private MonitoringPmoInputResponseDto.OrderPmo buildOrderPmo(List<MonitoringPmoInputResponseDto.OrderDetail> details) {
+        long paidCount = details.stream()
+                .filter(d -> "paid".equals(d.getStatus()))
+                .count();
+        long unpaidCount = details.stream()
+                .filter(d -> "unpaid".equals(d.getStatus()))
+                .count();
+        long processingCount = details.stream()
+                .filter(d -> "processing".equals(d.getStatus()))
+                .count();
+
+        return MonitoringPmoInputResponseDto.OrderPmo.builder()
+                .total(details.size())
+                .paid((int) paidCount)
+                .unpaid((int) unpaidCount)
+                .processing((int) processingCount)
+                .details(details)
+                .build();
+    }
+
 }

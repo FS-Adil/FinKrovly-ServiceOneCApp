@@ -17,4 +17,5 @@ public class OneCProperties {
     private String oneCGuidOpen;
     private String oneCGuidDefective;
     private String oneCGuidCategory;
+    private String typeOfPrices;
 }
