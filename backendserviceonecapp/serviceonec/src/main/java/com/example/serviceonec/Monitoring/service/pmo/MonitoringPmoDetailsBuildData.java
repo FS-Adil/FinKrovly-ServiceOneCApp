@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Component
@@ -39,9 +40,9 @@ public class MonitoringPmoDetailsBuildData {
         organizationMap.put("НК Дербент", "e79c6ee7-3be9-11ec-815c-000c29f4122d");
         organizationMap.put("КК Пятигорск", "b125e94a-af5f-11ee-8676-a6875c54f300");
 
-        counterpartyMap.put("Цех Надежна Крыша Поставщик", "32c959f5-bf9a-11e5-ab21-f46d0466b92f");
-        counterpartyMap.put("Цех Финкровля Поставщик", "ed447d5f-10e4-11e9-80f4-000c29aa9162");
-        counterpartyMap.put("Цех НК Дербент Поставщик", "e79c6ee7-3be9-11ec-815c-000c29f4122d");
+        counterpartyMap.put("Цех Надежна Крыша Поставщик", "3501d0c0-171e-11e9-80f4-000c29aa9162");
+        counterpartyMap.put("Цех Финкровля Поставщик", "219d4b2f-171d-11e9-80f4-000c29aa9162");
+        counterpartyMap.put("Цех НК Дербент Поставщик", "b7d5cab1-5cae-11ec-815c-000c29f4122d");
         counterpartyMap.put("Поставщик в Пятигорске", "4a766a6a-5364-11f0-aecf-00155d044f02");
 
         List<String[]> listOfArrays = new ArrayList<>();
@@ -68,7 +69,10 @@ public class MonitoringPmoDetailsBuildData {
                 // Получаем из 1с Запасы на приходники, фильтруем по ref_key
                 MonitoringPmoInvoiceStocksOutputResponseDto invoiceStocks = getResponseInvoiceStocks(receiptInvoice.getRefKey().toString());
 
-                log.info("{}", invoiceStocks.getPrice());
+                if (invoiceStocks == null) {
+                    continue;
+                }
+                log.debug("{}", invoiceStocks.getPrice());
 
                 // Получаем из 1с все Цены Номенклатуры, фильтруем по виду цен "Цена между фирмами" и номенклатуре, и характеристике
                 MonitoringPmoPricesOfItemOutputResponseDto pricesOfItems = getResponsePricesOfItems(
@@ -76,15 +80,23 @@ public class MonitoringPmoDetailsBuildData {
                         invoiceStocks.getCharacteristicKey()
                 );
 
-                if (pricesOfItems.getValue().isEmpty()) {
-                    log.info("Список цен на Товары пуст");
+                if (pricesOfItems == null) {
                     continue;
                 }
 
-                BigDecimal priceOf = pricesOfItems.getValue().getFirst().getPrice();
+                if (pricesOfItems.getValue().isEmpty()) {
+                    log.debug("Список цен на Товары пуст");
+                    continue;
+                }
+
+                MonitoringPmoPricesOfItemOutputResponseDto.PriceRecord priceRecord = pricesOfItems.getValue().stream()
+                        .max(Comparator.comparing(MonitoringPmoPricesOfItemOutputResponseDto.PriceRecord::getPeriod))
+                        .orElse(null);
+
+                BigDecimal priceOf = priceRecord.getPrice();
 
                 if (invoiceStocks.getPrice().compareTo(priceOf) == 0) {
-                    log.info("Цена соответствует!");
+                    log.debug("Цена соответствует!");
                     continue;
                 }
 
@@ -118,7 +130,7 @@ public class MonitoringPmoDetailsBuildData {
 
         log.info("------> Старт метода по поиску в 1с всех Приходников");
 
-        LocalDateTime date = LocalDateTime.now();
+        LocalDateTime date = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
 
         String url = String.format("/Document_ПриходнаяНакладная?" +
                 "$filter=Posted eq true" +
@@ -131,6 +143,8 @@ public class MonitoringPmoDetailsBuildData {
                 "$select=Ref_Key, Number, Date, Автор_Key, Комментарий, Контрагент_Key, Организация_Key&" +
                 "$orderby=Date desc&" +
                 "$format=json");
+
+//        log.info("url-->{}", url);
 
         MonitoringPmoInvoiceOutputResponseDto response;
 
@@ -154,7 +168,7 @@ public class MonitoringPmoDetailsBuildData {
     }
 
     private MonitoringPmoInvoiceStocksOutputResponseDto getResponseInvoiceStocks(String refKey) {
-        log.info("------> Старт метода по поиску в 1с Запасы Приходника");
+        log.debug("------> Старт метода по поиску в 1с Запасы Приходника");
 
         String url = String.format("/Document_ПриходнаяНакладная_Запасы(" +
                 "Ref_Key=guid'%s', LineNumber=1" +
@@ -162,30 +176,27 @@ public class MonitoringPmoDetailsBuildData {
                 "$select=Ref_Key, LineNumber, Номенклатура_Key, Характеристика_Key, Цена, Количество&" +
                 "$format=json", refKey);
 
-        MonitoringPmoInvoiceStocksOutputResponseDto response;
-
         try {
 
-            response = restClientConfig.restClient().get()
+            MonitoringPmoInvoiceStocksOutputResponseDto response = restClientConfig.restClient().get()
                     .uri(url)
                     .retrieve()
                     .body(MonitoringPmoInvoiceStocksOutputResponseDto.class);
 
+            log.debug("------> Конец метода по поиску в 1с Запасы Приходника");
+            return response;
         } catch (Exception e) {
             // Логирование ошибки
             log.error(
                     String.format("Ошибка при получении Запасы Приходника"), String.valueOf(e)
             );
-            throw new RuntimeException("Ошибка получения данных из 1С", e);
+            return null;
         }
-        log.info("------> Конец метода по поиску в 1с Запасы Приходника");
-
-        return response;
     }
 
     private MonitoringPmoPricesOfItemOutputResponseDto getResponsePricesOfItems(UUID nomenclatureKey, UUID characteristicKey) {
 
-        log.info("------> Старт метода по поиску в 1с Цены Номенклатуры");
+        log.debug("------> Старт метода по поиску в 1с Цены Номенклатуры");
 
         String url = String.format("/InformationRegister_ЦеныНоменклатуры/" +
                 "?" +
@@ -199,25 +210,22 @@ public class MonitoringPmoDetailsBuildData {
                 characteristicKey
                 );
 
-        MonitoringPmoPricesOfItemOutputResponseDto response;
-
         try {
 
-            response = restClientConfig.restClient().get()
+            MonitoringPmoPricesOfItemOutputResponseDto response = restClientConfig.restClient().get()
                     .uri(url)
                     .retrieve()
                     .body(MonitoringPmoPricesOfItemOutputResponseDto.class);
+
+            log.debug("------> Конец метода по поиску в 1с всех Цены Номенклатуры");
+            return response;
 
         } catch (Exception e) {
             // Логирование ошибки
             log.error(
                     String.format("Ошибка при получении Списка Цены Номенклатуры"), String.valueOf(e)
             );
-            throw new RuntimeException("Ошибка получения данных из 1С", e);
+            return null;
         }
-
-        log.info("------> Конец метода по поиску в 1с всех Цены Номенклатуры");
-
-        return response;
     }
 }
