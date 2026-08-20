@@ -1,6 +1,13 @@
 server:
   port: 8080
 
+# OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 spring:
   config:
     import:
@@ -29,6 +36,9 @@ spring:
         order_inserts: true
         order_updates: true
     show-sql: false
+
+  jackson:
+    time-zone: UTC
 
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml

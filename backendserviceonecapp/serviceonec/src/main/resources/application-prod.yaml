@@ -21,6 +21,9 @@ spring:
           batch_size: 50
     show-sql: false
 
+  jackson:
+    time-zone: UTC
+
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
@@ -31,13 +34,6 @@ logging:
     root: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"  # Формат логов
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/application.log
-  logback:
-    rollingpolicy:
-      max-file-size: 10MB
-      max-history: 30
 
 server:
   port: ${PORT:8080}
@@ -54,6 +50,12 @@ management:
   endpoint:
     health:
       show-details: never
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
 
 one-c:
   odata-fin:

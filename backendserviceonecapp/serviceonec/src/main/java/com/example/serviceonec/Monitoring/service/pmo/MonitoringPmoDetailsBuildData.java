@@ -1,6 +1,5 @@
 package com.example.serviceonec.Monitoring.service.pmo;
 
-import com.example.serviceonec.Mobile.dto.output.RollMobileOutputResponseDto;
 import com.example.serviceonec.Monitoring.dto.input.MonitoringPmoInputResponseDto;
 import com.example.serviceonec.Monitoring.dto.output.MonitoringPmoInvoiceOutputResponseDto;
 import com.example.serviceonec.Monitoring.dto.output.MonitoringPmoInvoiceStocksOutputResponseDto;
@@ -70,6 +69,7 @@ public class MonitoringPmoDetailsBuildData {
                 MonitoringPmoInvoiceStocksOutputResponseDto invoiceStocks = getResponseInvoiceStocks(receiptInvoice.getRefKey().toString());
 
                 if (invoiceStocks == null) {
+                    log.info("У данного приходника нет позиций --> {}", receiptInvoice.getNumber());
                     continue;
                 }
                 log.debug("{}", invoiceStocks.getPrice());

@@ -3,14 +3,14 @@ package com.example.serviceonec.model.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.UUID;
 
-@Entity
+
 @Getter
 @Setter
+@Entity
 @Table(name = "nomenclature")
 public class NomenclatureEntity extends BaseEntity {
 
@@ -22,6 +22,9 @@ public class NomenclatureEntity extends BaseEntity {
 
     @Column(name = "measurement_unit_key")
     private UUID measurementUnitKey;
+
+    @Column(name = "categories_key")
+    private UUID categoriesKey;
 
     @Column(name = "code", nullable = false, unique = true)
     private String code;

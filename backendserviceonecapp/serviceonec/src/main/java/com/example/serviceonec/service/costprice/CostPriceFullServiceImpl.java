@@ -1,6 +1,8 @@
 package com.example.serviceonec.service.costprice;
 
+import com.example.serviceonec.controller.costprice.output.CostPriceAutoFillingControllerOutput;
 import com.example.serviceonec.controller.costprice.output.CostPriceControllerOutput;
+import com.example.serviceonec.service.costprice.structure.autofilling.AutoFillingService;
 import com.example.serviceonec.service.costprice.structure.costcalculation.CostCalculationFullService;
 import com.example.serviceonec.service.costprice.structure.expend.ExpendFullService;
 import com.example.serviceonec.service.costprice.structure.invoice.InvoiceFullService;
@@ -28,9 +30,10 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
     private final ResultingIncomeFullService resultingIncomeFullService;
     private final CostCalculationFullService costCalculationFullService;
     private final SpecificationService specificationService;
+    private final AutoFillingService autoFillingService;
 
     @Override
-    public List<CostPriceControllerOutput> getAllCostPrice(
+    public List<CostPriceAutoFillingControllerOutput> getAllCostPrice(
             UUID organizationId,
             LocalDateTime startDate,
             LocalDateTime endDate
@@ -142,10 +145,18 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
         log.info("✅ Агрегация завершена за {} мс, получено {} уникальных записей",
                 System.currentTimeMillis() - stepStart, aggregated.size());
 
+        // Шаг 8:
+        // Ручное заполнение нулевых полей, создание поля Автоматический расчет "Да/Нет"
+        log.info("🔄 8.1/8:Заполнение нулевых полей...");
+        stepStart = System.currentTimeMillis();
+        List<CostPriceAutoFillingControllerOutput> aggregatedAutoFilling = autoFillingService.getAutoFilling(aggregated);
+        log.info("✅ Заполнение нулевых полей завершена за {} мс",
+                System.currentTimeMillis() - stepStart);
+
         long totalTime = System.currentTimeMillis() - methodStartTime;
         log.info("⏱️ Общее время выполнения: {} мс ({} сек)", totalTime, totalTime / 1000);
         log.info("🏁 ===== ЗАВЕРШЕНИЕ РАСЧЕТА СЕБЕСТОИМОСТИ =====");
-        return aggregated;
+        return aggregatedAutoFilling;
     }
 
     private List<CostPriceControllerOutput> aggregateOnlyFast(List<CostPriceControllerOutput> products) {
@@ -175,6 +186,7 @@ public class CostPriceFullServiceImpl implements CostPriceFullService {
                         .name(productName)
                         .characteristic(productCharacteristic)
                         .batch(productBatch)
+                                .categories(p.getCategories())
                         .measurementUnit(p.getMeasurementUnit())
                         .quantity(p.getQuantity())
                         .price(p.getPrice().multiply(p.getQuantity()))

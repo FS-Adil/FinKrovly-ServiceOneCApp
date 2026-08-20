@@ -1,19 +1,15 @@
 package com.example.serviceonec.controller.costprice.output;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.UUID;
-
 
 @Getter
 @Setter
 @Builder
-public class CostPriceControllerOutput {
+public class CostPriceAutoFillingControllerOutput {
 
     private String refKey;
     private String number;
@@ -25,5 +21,6 @@ public class CostPriceControllerOutput {
     private BigDecimal quantity;
     private BigDecimal price;
     private BigDecimal cost;
+    private String autoFilling;
 
 }

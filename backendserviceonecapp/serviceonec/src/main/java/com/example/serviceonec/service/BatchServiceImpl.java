@@ -28,8 +28,8 @@ public class BatchServiceImpl implements BatchService {
     private final BatchMapper batchMapper;
 
     private static final int PAGE_SIZE = 500; // Размер страницы
-    private static final int THREAD_POOL_SIZE = 5; // Количество потоков
-    private static final int TIMEOUT_MINUTES = 20; // Таймаут
+    private static final int THREAD_POOL_SIZE = 10; // Количество потоков
+    private static final int TIMEOUT_MINUTES = 10; // Таймаут
 
     @Override
     public Page<BatchEntity> getAllBatch() {

@@ -1,6 +1,7 @@
 package com.example.serviceonec.controller.costprice;
 
 import com.example.serviceonec.controller.assembly.input.AssemblyExpendControllerInput;
+import com.example.serviceonec.controller.costprice.output.CostPriceAutoFillingControllerOutput;
 import com.example.serviceonec.controller.costprice.output.CostPriceControllerOutput;
 import com.example.serviceonec.service.costprice.CostPriceFullService;
 import jakarta.validation.Valid;
@@ -25,11 +26,11 @@ public class CostPriceFullController {
     private final CostPriceFullService costPriceFullService;
 
     @PostMapping("/assembly")
-    public ResponseEntity<List<CostPriceControllerOutput>> getAllAssemblyExpendCostPrice(
+    public ResponseEntity<List<CostPriceAutoFillingControllerOutput>> getAllAssemblyExpendCostPrice(
             @Valid @RequestBody AssemblyExpendControllerInput request
     ) {
 
-        List<CostPriceControllerOutput> list = costPriceFullService.getAllCostPrice(
+        List<CostPriceAutoFillingControllerOutput> list = costPriceFullService.getAllCostPrice(
                 request.getOrganizationId(),
                 request.getDateFrom(),
                 request.getDateTo()

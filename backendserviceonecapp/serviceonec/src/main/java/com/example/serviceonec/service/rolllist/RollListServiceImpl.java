@@ -11,6 +11,7 @@ import com.example.serviceonec.model.entity.rolllist.RollListEntity;
 import com.example.serviceonec.repository.BatchRepository;
 import com.example.serviceonec.repository.CharacteristicRepository;
 import com.example.serviceonec.repository.NomenclatureRepository;
+import com.example.serviceonec.service.BatchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,8 @@ public class RollListServiceImpl implements RollListService {
     private final BatchRepository batchRepository;
 
     private final OneCProperties oneCProperties;
+
+    private final BatchService batchService;
 
     @Override
     public List<RollListEntity> getAllClosedRoll() {
@@ -78,33 +81,38 @@ public class RollListServiceImpl implements RollListService {
                         characteristicName = "Не найдено";
                     }
 
+                    BatchEntity batch = null;
+
                     try {
-                        BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
+                        batch = batchRepository.findByRefKey(item.getBatchKey());
+
+                        if (batch == null) {
+                            log.debug("Партия {} не найдена", item.getBatchKey());
+                            log.info("--> Запускаем сервис по обновлению репозиторий по партиям");
+                            batchService.getAllBatch();
+
+                            batch = batchRepository.findByRefKey(item.getBatchKey());
+                        }
+
                         if (batch != null) {
                             batchName = batch.getDescription();
-                        } else log.debug("Партия {} не найдена", item.getBatchKey());
+                        } else {
+                            batchName = "Не найдено";
+                        }
                     } catch (Exception e) {
                         log.error("Ошибка при получении партии: {}", e.getMessage());
                         batchName = "Не найдено";
                     }
 
-                    try {
-                        BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
-                        if (batch != null) {
-                            batchWeight = batch.getWeight();
-                        }
-                    } catch (Exception e) {
-                        log.error("Ошибка при получении Веса рулона по партии: {}", e.getMessage());
+                    if (batch != null) {
+                        batchWeight = batch.getWeight();
+                    } else {
                         batchWeight = BigDecimal.valueOf(0.00);
                     }
 
-                    try {
-                        BatchEntity batch = batchRepository.findByRefKey(item.getBatchKey());
-                        if (batch != null) {
-                            batchLength = batch.getLength();
-                        }
-                    } catch (Exception e) {
-                        log.error("Ошибка при получении Длины рулона по партии: {}", e.getMessage());
+                    if (batch != null) {
+                        batchLength = batch.getLength();
+                    } else {
                         batchLength = BigDecimal.valueOf(0.00);
                     }
 

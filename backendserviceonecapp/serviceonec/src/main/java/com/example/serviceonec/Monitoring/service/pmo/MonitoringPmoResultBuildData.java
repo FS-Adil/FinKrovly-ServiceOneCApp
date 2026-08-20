@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.example.serviceonec.Monitoring.dto.input.MonitoringPmoInputResponseDto.*;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -16,53 +18,53 @@ public class MonitoringPmoResultBuildData {
     private final MonitoringPmoDetailsBuildData monitoringPmoDetailsBuildData;
 
     public MonitoringPmoInputResponseDto buildData() {
-        List<MonitoringPmoInputResponseDto.OrderDetail> detailsOne = buildDetailsOne();
-        List<MonitoringPmoInputResponseDto.OrderDetail> detailsTwo = buildDetailsTwo();
+        List<OrderDetail> detailsOne = buildDetailsOne();
+        List<OrderDetail> detailsTwo = buildDetailsTwo();
 
-        MonitoringPmoInputResponseDto.OrderPmo orderPmoOne = buildOrderPmo(detailsOne);
-        MonitoringPmoInputResponseDto.OrderPmo orderPmoTwo = buildOrderPmo(detailsTwo);
+        OrderPmo orderPmoOne = buildOrderPmo(detailsOne);
+        OrderPmo orderPmoTwo = buildOrderPmo(detailsTwo);
 
-        return MonitoringPmoInputResponseDto.builder()
+        return builder()
                 .orderPmoOne(orderPmoOne)
                 .orderPmoTwo(orderPmoTwo)
                 .build();
     }
 
-    private List<MonitoringPmoInputResponseDto.OrderDetail> buildDetailsTwo() {
+    private List<OrderDetail> buildDetailsTwo() {
         return monitoringPmoDetailsBuildData.getDetailsPmoTwo();
     }
 
-    private List<MonitoringPmoInputResponseDto.OrderDetail> buildDetailsOne() {
+    private List<OrderDetail> buildDetailsOne() {
         return Arrays.asList(
-                MonitoringPmoInputResponseDto.OrderDetail.builder()
+                OrderDetail.builder()
                         .author("Смирнов А.А.")
                         .orderNumber("ORD-2024101")
                         .date("2024-02-10")
                         .comment("Региональная доставка")
                         .status("paid")
                         .build(),
-                MonitoringPmoInputResponseDto.OrderDetail.builder()
+                OrderDetail.builder()
                         .author("Фёдоров Ф.Ф.")
                         .orderNumber("ORD-2024102")
                         .date("2024-02-11")
                         .comment("Экспресс")
                         .status("paid")
                         .build(),
-                MonitoringPmoInputResponseDto.OrderDetail.builder()
+                OrderDetail.builder()
                         .author("Григорьев Г.Г.")
                         .orderNumber("ORD-2024103")
                         .date("2024-02-12")
                         .comment("Ожидает оплаты")
                         .status("unpaid")
                         .build(),
-                MonitoringPmoInputResponseDto.OrderDetail.builder()
+                OrderDetail.builder()
                         .author("Алексеев А.А.")
                         .orderNumber("ORD-2024104")
                         .date("2024-02-13")
                         .comment("На складе")
                         .status("paid")
                         .build(),
-                MonitoringPmoInputResponseDto.OrderDetail.builder()
+                OrderDetail.builder()
                         .author("Дмитриев Д.Д.")
                         .orderNumber("ORD-2024105")
                         .date("2024-02-14")
@@ -72,7 +74,7 @@ public class MonitoringPmoResultBuildData {
         );
     }
 
-    private MonitoringPmoInputResponseDto.OrderPmo buildOrderPmo(List<MonitoringPmoInputResponseDto.OrderDetail> details) {
+    private OrderPmo buildOrderPmo(List<OrderDetail> details) {
         long paidCount = details.stream()
                 .filter(d -> "paid".equals(d.getStatus()))
                 .count();
@@ -83,7 +85,7 @@ public class MonitoringPmoResultBuildData {
                 .filter(d -> "processing".equals(d.getStatus()))
                 .count();
 
-        return MonitoringPmoInputResponseDto.OrderPmo.builder()
+        return OrderPmo.builder()
                 .total(details.size())
                 .paid((int) paidCount)
                 .unpaid((int) unpaidCount)

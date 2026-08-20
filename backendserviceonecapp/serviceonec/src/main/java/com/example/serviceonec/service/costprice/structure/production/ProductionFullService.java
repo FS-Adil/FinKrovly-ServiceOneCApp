@@ -79,22 +79,11 @@ public class ProductionFullService {
     private AtomicInteger foundWithCost;
 
 
-    public void getAllProduction(
-            UUID organizationId,
-            LocalDateTime dateFrom,
-            LocalDateTime dateTo
-    ) {
-        productionService.getAllProduction(
-                organizationId,
-                dateFrom,
-                dateTo
-        );
+    public void getAllProduction(UUID organizationId, LocalDateTime dateFrom, LocalDateTime dateTo) {
 
-        productionAdditiveService.getAllProduction(
-                organizationId,
-                dateFrom,
-                dateTo
-        );
+        productionService.getAllProduction(organizationId, dateFrom, dateTo);
+        productionAdditiveService.getAllProduction(organizationId, dateFrom, dateTo);
+
     }
 
     public void addAllProduction() {

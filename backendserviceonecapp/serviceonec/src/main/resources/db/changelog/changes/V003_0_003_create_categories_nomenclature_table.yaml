@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: V003_0_003_create_categories_nomenclature_table
+      author: adilhan
+      changes:
+        - addColumn:
+            tableName: nomenclature
+            columns:
+              - column:
+                  name: categories_key
+                  type: UUID
+                  constraints:
+                    nullable: true

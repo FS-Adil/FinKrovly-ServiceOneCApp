@@ -129,7 +129,7 @@ public class NomenclatureServiceImpl implements NomenclatureService {
 
     private NomenclatureResponseDto getNomenclature(Integer top, Integer skip) {
         String url = String.format("/Catalog_Номенклатура?" +
-                "$select=Description,Code,Ref_Key,ЕдиницаИзмерения_Key&" +
+                "$select=Description,Code,Ref_Key,ЕдиницаИзмерения_Key, КатегорияНоменклатуры_Key&" +
                 "$top=%s&$skip=%s&" +
                 "$orderby=Code desc&" +
                 "$format=json", top, skip);

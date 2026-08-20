@@ -88,6 +88,4 @@ public class MonitoringOrderResultBuildData {
                 .details(details)
                 .build();
     }
-
-
 }

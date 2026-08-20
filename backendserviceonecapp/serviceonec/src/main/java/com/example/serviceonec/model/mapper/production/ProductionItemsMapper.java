@@ -19,11 +19,14 @@ public interface ProductionItemsMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
+    @Mapping(target = "price", ignore = true)
+
     ProductionItemsEntity toEntity(ProductionItemResponseDto.ProductionItemsDto dto);
 
     /**
      * Маппинг из Entity в DTO
      */
+
 //    ProductionItemResponseDto.ProductionItemsDto toDto(ProductionItemsEntity entity);
 
     /**

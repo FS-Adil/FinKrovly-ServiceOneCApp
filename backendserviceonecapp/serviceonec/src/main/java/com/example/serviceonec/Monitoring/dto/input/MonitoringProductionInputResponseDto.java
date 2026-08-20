@@ -13,14 +13,14 @@ import java.util.List;
 public class MonitoringProductionInputResponseDto {
 
     @JsonProperty("orderProductionOne")
-    private OrderProductionOne orderProductionOne;
+    private OrderProduction orderProductionOne;
 
     @Getter
     @Setter
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class OrderProductionOne {
+    public static class OrderProduction {
         private int total;
         private int paid;
         private int unpaid;
